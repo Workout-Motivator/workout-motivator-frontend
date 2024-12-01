@@ -16,6 +16,7 @@ import {
   DialogActions,
 } from '@mui/material';
 import { useAuth } from '../auth/AuthContext';
+import { API_BASE_URL } from '../config';
 
 interface Exercise {
   id: number;
@@ -54,14 +55,24 @@ const WorkoutBrowser: React.FC = () => {
 
   useEffect(() => {
     // Fetch categories
-    fetch('/api/workouts/assets/categories')
-      .then(response => response.json())
+    fetch(`${API_BASE_URL}/api/workouts/assets/categories`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then(data => setCategories(data))
       .catch(error => console.error('Error fetching categories:', error));
 
     // Fetch all workouts
-    fetch('/api/workouts/assets')
-      .then(response => response.json())
+    fetch(`${API_BASE_URL}/api/workouts/assets`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then(data => {
         setWorkouts(data);
         setLoading(false);
@@ -78,7 +89,10 @@ const WorkoutBrowser: React.FC = () => {
 
   const handleWorkoutClick = async (workout: WorkoutAsset) => {
     try {
-      const response = await fetch(`/api/workouts/assets/${workout.id}`);
+      const response = await fetch(`${API_BASE_URL}/api/workouts/assets/${workout.id}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       setSelectedWorkout(data);
       setDialogOpen(true);
@@ -91,7 +105,7 @@ const WorkoutBrowser: React.FC = () => {
     if (!selectedWorkout || !user) return;
 
     try {
-      await fetch('/workouts/user/', {
+      const response = await fetch(`${API_BASE_URL}/workouts/user/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,6 +117,7 @@ const WorkoutBrowser: React.FC = () => {
           user_id: user.uid,
         }),
       });
+      await response.json();
       setDialogOpen(false);
       // You can add navigation to the workout tracker here
     } catch (error) {

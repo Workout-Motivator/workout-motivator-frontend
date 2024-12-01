@@ -75,14 +75,31 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const handleTabChange = (event: CustomEvent) => {
+      setValue(event.detail);
+      localStorage.setItem('selectedTab', event.detail.toString());
+      const params = new URLSearchParams(window.location.search);
+      params.set('tab', event.detail.toString());
+      window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+    };
+
+    window.addEventListener('tabChange', handleTabChange as EventListener);
+    return () => {
+      window.removeEventListener('tabChange', handleTabChange as EventListener);
+    };
+  }, []);
+
   const AppContent = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    const handleTabChange = (newValue: number) => {
       setValue(newValue);
       localStorage.setItem('selectedTab', newValue.toString());
-      navigate(`?tab=${newValue}`, { replace: true });
+      const params = new URLSearchParams(window.location.search);
+      params.set('tab', newValue.toString());
+      navigate(`?${params.toString()}`, { replace: true });
     };
 
     useEffect(() => {
@@ -158,7 +175,7 @@ function App() {
           </Toolbar>
           <Tabs 
             value={value} 
-            onChange={handleTabChange} 
+            onChange={(e, newValue) => handleTabChange(newValue)}
             aria-label="navigation tabs"
             sx={{ 
               '& .MuiTab-root': { 
@@ -209,7 +226,7 @@ function App() {
             <ExerciseList />
           </TabPanel>
           <TabPanel value={value} index={2}>
-            <AccountabilityPartner />
+            <AccountabilityPartner onTabChange={handleTabChange} />
           </TabPanel>
           <TabPanel value={value} index={3}>
             <ChatRoom />

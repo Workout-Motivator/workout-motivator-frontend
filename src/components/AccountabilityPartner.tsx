@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -16,6 +17,11 @@ import {
   Tab,
   Alert,
   IconButton,
+  Paper,
+  Grid,
+  Card,
+  CardContent,
+  Avatar,
 } from '@mui/material';
 import { db, auth } from '../firebase';
 import {
@@ -52,6 +58,10 @@ interface DeleteDialogProps {
   partner: Partner | null;
   onClose: () => void;
   onConfirm: () => void;
+}
+
+interface AccountabilityPartnerProps {
+  onTabChange?: (tabIndex: number) => void;
 }
 
 const DeletePartnerDialog: React.FC<DeleteDialogProps> = ({ open, partner, onClose, onConfirm }) => (
@@ -91,7 +101,8 @@ const DeletePartnerDialog: React.FC<DeleteDialogProps> = ({ open, partner, onClo
   </Dialog>
 );
 
-export const AccountabilityPartner: React.FC = () => {
+export const AccountabilityPartner: React.FC<AccountabilityPartnerProps> = ({ onTabChange }) => {
+  const navigate = useNavigate();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [requests, setRequests] = useState<PartnerRequest[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
@@ -283,40 +294,175 @@ export const AccountabilityPartner: React.FC = () => {
       )}
 
       {tabValue === 0 && (
-        <>
-          <Button 
-            variant="contained" 
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* Partners List */}
+          <Box>
+            <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+              Your Partners
+            </Typography>
+            {partners.length === 0 ? (
+              <Paper sx={{ p: 3, bgcolor: 'grey.50', textAlign: 'center' }}>
+                <Typography color="text.secondary">
+                  You don't have any partners yet. Add a partner to get started!
+                </Typography>
+              </Paper>
+            ) : (
+              <Grid container spacing={2}>
+                {partners.map((partner) => (
+                  <Grid item xs={12} sm={6} md={4} key={partner.id}>
+                    <Card 
+                      sx={{ 
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: 4,
+                        }
+                      }}
+                    >
+                      <CardContent sx={{ flexGrow: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                          <Avatar 
+                            sx={{ 
+                              width: 56, 
+                              height: 56, 
+                              bgcolor: 'primary.main',
+                              fontSize: '1.5rem',
+                              mr: 2
+                            }}
+                          >
+                            {partner.username.charAt(0).toUpperCase()}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
+                              {partner.username}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {partner.email}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button 
+                            variant="contained" 
+                            color="primary"
+                            fullWidth
+                            onClick={() => {
+                              if (onTabChange) {
+                                onTabChange(3); // Switch to chat tab (index 3)
+                              }
+                            }}
+                            sx={{ 
+                              flex: 2,
+                              textTransform: 'none',
+                              fontWeight: 500
+                            }}
+                          >
+                            Chat
+                          </Button>
+                          <Button
+                            variant="contained"
+                            color="error"
+                            onClick={() => setDeleteDialog({ open: true, partner })}
+                            sx={{ 
+                              minWidth: '50px',
+                              width: '50px',
+                              height: '100%',
+                              p: 1,
+                              '&:hover': {
+                                bgcolor: 'error.dark',
+                              }
+                            }}
+                          >
+                            <DeleteIcon />
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </Box>
+
+          {/* Add Partner Button */}
+          <Button
+            variant="contained"
+            color="primary"
             onClick={() => setOpenDialog(true)}
-            sx={{ mb: 3 }}
+            sx={{
+              py: 1.5,
+              width: 'fit-content',
+              alignSelf: 'flex-start',
+              borderRadius: 2,
+              boxShadow: 2,
+              '&:hover': {
+                boxShadow: 4,
+              }
+            }}
           >
             Add Partner
           </Button>
 
-          <List>
-            {partners.map((partner) => (
-              <ListItem key={partner.id}>
-                <ListItemText
-                  primary={partner.username}
-                  secondary={partner.email}
-                />
-                <ListItemSecondaryAction>
-                  <IconButton
-                    edge="end"
-                    color="error"
-                    onClick={() => handleDeletePartner(partner)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </ListItemSecondaryAction>
-              </ListItem>
-            ))}
-            {partners.length === 0 && (
-              <Typography color="text.secondary">
-                No partners yet. Add some partners to get started!
+          {/* Partner Requests */}
+          {requests.length > 0 && (
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+                Partner Requests
               </Typography>
-            )}
-          </List>
-        </>
+              <Grid container spacing={2}>
+                {requests.map((request) => (
+                  <Grid item xs={12} sm={6} md={4} key={request.id}>
+                    <Card sx={{ 
+                      height: '100%',
+                      bgcolor: 'primary.light',
+                      color: 'primary.contrastText'
+                    }}>
+                      <CardContent>
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="h6" component="div">
+                            {request.fromUsername}
+                          </Typography>
+                          <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                            {request.fromEmail}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button
+                            variant="contained"
+                            color="success"
+                            fullWidth
+                            onClick={() => handleAcceptRequest(request)}
+                            sx={{ 
+                              bgcolor: 'success.main',
+                              '&:hover': { bgcolor: 'success.dark' }
+                            }}
+                          >
+                            Accept
+                          </Button>
+                          <Button
+                            variant="contained"
+                            color="error"
+                            fullWidth
+                            onClick={() => handleRejectRequest(request.id)}
+                            sx={{ 
+                              bgcolor: 'error.main',
+                              '&:hover': { bgcolor: 'error.dark' }
+                            }}
+                          >
+                            Reject
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          )}
+        </Box>
       )}
 
       {tabValue === 1 && (
