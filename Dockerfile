@@ -11,6 +11,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Copy firebase template to firebase.ts
+RUN cp src/firebase.template.ts src/firebase.ts
+
 # Add build-time variables
 ARG REACT_APP_FIREBASE_API_KEY
 ARG REACT_APP_FIREBASE_AUTH_DOMAIN
