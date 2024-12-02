@@ -136,7 +136,7 @@ kubectl apply -f kubernetes/service.yml
 
 - React 18
 - TypeScript
-- Firebase Authentication
+- Firebase (Authentication, Firestore)
 - Material-UI
 - Docker
 - Azure Kubernetes Service
@@ -172,15 +172,3 @@ kubectl apply -f kubernetes/service.yml
    - Verify GitHub secrets are correctly set
    - Check pod logs: `kubectl logs -n workout-motivator <pod-name>`
    - Verify ACR credentials: `kubectl get secret acr-secret -n workout-motivator`
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-[Your License]
