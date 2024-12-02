@@ -6,10 +6,10 @@ on:
   workflow_dispatch:
 
 env:
-  CLUSTER_NAME: workout-motivator    # Your AKS cluster name
-  CLUSTER_RESOURCE_GROUP: WAP    # Your resource group
-  NAMESPACE: workout-motivator    # Namespace in your AKS cluster
-  APP_NAME: workout-motivator-frontend    # Application name
+  CLUSTER_NAME: workout-motivator
+  CLUSTER_RESOURCE_GROUP: WAP
+  NAMESPACE: workout-motivator
+  APP_NAME: workout-motivator-frontend
   
 jobs:
   build-and-deploy:
@@ -45,12 +45,25 @@ jobs:
         run: |
           kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Prepare deployment manifests
+        run: |
+          export ACR_SERVER=${{ secrets.REGISTRY_LOGIN_SERVER }}
+          export IMAGE_NAME=${{ env.APP_NAME }}
+          export IMAGE_TAG=${{ github.sha }}
+          
+          # Create temp directory for processed manifests
+          mkdir -p manifests
+          
+          # Process deployment manifest
+          envsubst < kubernetes/deployment.yml > manifests/deployment.yml
+          cp kubernetes/service.yml manifests/service.yml
+
       - name: Deploy to AKS
         uses: azure/k8s-deploy@v1
         with:
           manifests: |
-            kubernetes/deployment.yml
-            kubernetes/service.yml
+            manifests/deployment.yml
+            manifests/service.yml
           images: |
             ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ env.APP_NAME }}:${{ github.sha }}
           namespace: ${{ env.NAMESPACE }}
