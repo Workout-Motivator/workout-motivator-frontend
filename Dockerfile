@@ -11,9 +11,6 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Copy firebase template to firebase.ts
-RUN cp src/firebase.template.ts src/firebase.ts
-
 # Add build-time variables
 ARG REACT_APP_FIREBASE_API_KEY
 ARG REACT_APP_FIREBASE_AUTH_DOMAIN
@@ -23,6 +20,26 @@ ARG REACT_APP_FIREBASE_MESSAGING_SENDER_ID
 ARG REACT_APP_FIREBASE_APP_ID
 ARG REACT_APP_FIREBASE_MEASUREMENT_ID
 ARG REACT_APP_BACKEND_URL
+
+# Create Firebase config file
+RUN echo "import { initializeApp } from 'firebase/app';" > src/firebase.ts && \
+    echo "import { getAuth, GoogleAuthProvider } from 'firebase/auth';" >> src/firebase.ts && \
+    echo "import { getFirestore } from 'firebase/firestore';" >> src/firebase.ts && \
+    echo "" >> src/firebase.ts && \
+    echo "const firebaseConfig = {" >> src/firebase.ts && \
+    echo "  apiKey: '${REACT_APP_FIREBASE_API_KEY}'," >> src/firebase.ts && \
+    echo "  authDomain: '${REACT_APP_FIREBASE_AUTH_DOMAIN}'," >> src/firebase.ts && \
+    echo "  projectId: '${REACT_APP_FIREBASE_PROJECT_ID}'," >> src/firebase.ts && \
+    echo "  storageBucket: '${REACT_APP_FIREBASE_STORAGE_BUCKET}'," >> src/firebase.ts && \
+    echo "  messagingSenderId: '${REACT_APP_FIREBASE_MESSAGING_SENDER_ID}'," >> src/firebase.ts && \
+    echo "  appId: '${REACT_APP_FIREBASE_APP_ID}'," >> src/firebase.ts && \
+    echo "  measurementId: '${REACT_APP_FIREBASE_MEASUREMENT_ID}'" >> src/firebase.ts && \
+    echo "};" >> src/firebase.ts && \
+    echo "" >> src/firebase.ts && \
+    echo "const app = initializeApp(firebaseConfig);" >> src/firebase.ts && \
+    echo "export const auth = getAuth(app);" >> src/firebase.ts && \
+    echo "export const db = getFirestore(app);" >> src/firebase.ts && \
+    echo "export const googleProvider = new GoogleAuthProvider();" >> src/firebase.ts
 
 # Set environment variables
 ENV REACT_APP_FIREBASE_API_KEY=$REACT_APP_FIREBASE_API_KEY
