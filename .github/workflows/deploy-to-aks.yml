@@ -24,18 +24,10 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
       
       - name: Build and push image to ACR
-        uses: azure/docker-login@v1
-        with:
-          login-server: workoutmotivatoracr.azurecr.io
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
-      
-      - name: Build and push Docker image
         run: |
-          docker build . -t workoutmotivatoracr.azurecr.io/workout-motivator-frontend:${{ github.sha }}
-          docker build . -t workoutmotivatoracr.azurecr.io/workout-motivator-frontend:latest
-          docker push workoutmotivatoracr.azurecr.io/workout-motivator-frontend:${{ github.sha }}
-          docker push workoutmotivatoracr.azurecr.io/workout-motivator-frontend:latest
+          docker build . -t ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }} -t ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:latest --build-arg REACT_APP_FIREBASE_API_KEY=${{ secrets.REACT_APP_FIREBASE_API_KEY }} --build-arg REACT_APP_FIREBASE_AUTH_DOMAIN=${{ secrets.REACT_APP_FIREBASE_AUTH_DOMAIN }} --build-arg REACT_APP_FIREBASE_PROJECT_ID=${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }} --build-arg REACT_APP_FIREBASE_STORAGE_BUCKET=${{ secrets.REACT_APP_FIREBASE_STORAGE_BUCKET }} --build-arg REACT_APP_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }} --build-arg REACT_APP_FIREBASE_APP_ID=${{ secrets.REACT_APP_FIREBASE_APP_ID }} --build-arg REACT_APP_FIREBASE_MEASUREMENT_ID=${{ secrets.REACT_APP_FIREBASE_MEASUREMENT_ID }}
+          docker push ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }}
+          docker push ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:latest
       
       - name: Set AKS context
         uses: azure/aks-set-context@v1
@@ -55,6 +47,6 @@ jobs:
             kubernetes/deployment.yml
             kubernetes/service.yml
           images: |
-            workoutmotivatoracr.azurecr.io/workout-motivator-frontend:${{ github.sha }}
+            ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }}
           namespace: ${{ env.NAMESPACE }}
           strategy: recreate
