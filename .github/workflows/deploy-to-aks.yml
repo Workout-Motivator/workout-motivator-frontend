@@ -18,64 +18,65 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      # All deployment steps temporarily disabled to save costs
+      # - name: Azure Login
+      #   uses: azure/login@v1
+      #   with:
+      #     creds: ${{ secrets.AZURE_CREDENTIALS }}
       
-      - name: Login to ACR
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}
-          username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
-          password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
+      # - name: Login to ACR
+      #   uses: azure/docker-login@v1
+      #   with:
+      #     login-server: ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}
+      #     username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
+      #     password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
       
-      - name: Build and push image to ACR
-        run: |
-          docker build . -t ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }} -t ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:latest --build-arg REACT_APP_FIREBASE_API_KEY=${{ secrets.REACT_APP_FIREBASE_API_KEY }} --build-arg REACT_APP_FIREBASE_AUTH_DOMAIN=${{ secrets.REACT_APP_FIREBASE_AUTH_DOMAIN }} --build-arg REACT_APP_FIREBASE_PROJECT_ID=${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }} --build-arg REACT_APP_FIREBASE_STORAGE_BUCKET=${{ secrets.REACT_APP_FIREBASE_STORAGE_BUCKET }} --build-arg REACT_APP_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }} --build-arg REACT_APP_FIREBASE_APP_ID=${{ secrets.REACT_APP_FIREBASE_APP_ID }} --build-arg REACT_APP_FIREBASE_MEASUREMENT_ID=${{ secrets.REACT_APP_FIREBASE_MEASUREMENT_ID }}
-          docker push ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }}
-          docker push ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:latest
-      
-      - name: Set AKS context
-        uses: azure/aks-set-context@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-          cluster-name: ${{ env.CLUSTER_NAME }}
-          resource-group: ${{ env.CLUSTER_RESOURCE_GROUP }}
-      
-      - name: Create namespace if doesn't exist
-        run: |
-          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+      # - name: Build and push image to ACR
+      #   run: |
+      #     docker build . -t ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }} -t ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:latest --build-arg REACT_APP_FIREBASE_API_KEY=${{ secrets.REACT_APP_FIREBASE_API_KEY }} --build-arg REACT_APP_FIREBASE_AUTH_DOMAIN=${{ secrets.REACT_APP_FIREBASE_AUTH_DOMAIN }} --build-arg REACT_APP_FIREBASE_PROJECT_ID=${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }} --build-arg REACT_APP_FIREBASE_STORAGE_BUCKET=${{ secrets.REACT_APP_FIREBASE_STORAGE_BUCKET }} --build-arg REACT_APP_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }} --build-arg REACT_APP_FIREBASE_APP_ID=${{ secrets.REACT_APP_FIREBASE_APP_ID }} --build-arg REACT_APP_FIREBASE_MEASUREMENT_ID=${{ secrets.REACT_APP_FIREBASE_MEASUREMENT_ID }}
+      #     docker push ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }}
+      #     docker push ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:latest
 
-      - name: Create ACR pull secret
-        run: |
-          kubectl create secret docker-registry acr-secret \
-            --namespace ${{ env.NAMESPACE }} \
-            --docker-server=${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }} \
-            --docker-username=${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }} \
-            --docker-password=${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }} \
-            --dry-run=client -o yaml | kubectl apply -f -
+      # - name: Set AKS context
+      #   uses: azure/aks-set-context@v1
+      #   with:
+      #     creds: ${{ secrets.AZURE_CREDENTIALS }}
+      #     cluster-name: ${{ env.CLUSTER_NAME }}
+      #     resource-group: ${{ env.CLUSTER_RESOURCE_GROUP }}
+      
+      # - name: Create namespace if doesn't exist
+      #   run: |
+      #     kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Create Firebase configuration secret
-        run: |
-          kubectl create secret generic firebase-config \
-            --namespace ${{ env.NAMESPACE }} \
-            --from-literal=REACT_APP_FIREBASE_API_KEY=${{ secrets.REACT_APP_FIREBASE_API_KEY }} \
-            --from-literal=REACT_APP_FIREBASE_AUTH_DOMAIN=${{ secrets.REACT_APP_FIREBASE_AUTH_DOMAIN }} \
-            --from-literal=REACT_APP_FIREBASE_PROJECT_ID=${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }} \
-            --from-literal=REACT_APP_FIREBASE_STORAGE_BUCKET=${{ secrets.REACT_APP_FIREBASE_STORAGE_BUCKET }} \
-            --from-literal=REACT_APP_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }} \
-            --from-literal=REACT_APP_FIREBASE_APP_ID=${{ secrets.REACT_APP_FIREBASE_APP_ID }} \
-            --from-literal=REACT_APP_FIREBASE_MEASUREMENT_ID=${{ secrets.REACT_APP_FIREBASE_MEASUREMENT_ID }} \
-            --dry-run=client -o yaml | kubectl apply -f -
+      # - name: Create ACR pull secret
+      #   run: |
+      #     kubectl create secret docker-registry acr-secret \
+      #       --namespace ${{ env.NAMESPACE }} \
+      #       --docker-server=${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }} \
+      #       --docker-username=${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }} \
+      #       --docker-password=${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }} \
+      #       --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Deploy to AKS
-        uses: azure/k8s-deploy@v1
-        with:
-          manifests: |
-            kubernetes/deployment.yml
-            kubernetes/service.yml
-          images: |
-            ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }}
-          namespace: ${{ env.NAMESPACE }}
-          strategy: recreate
+      # - name: Create Firebase configuration secret
+      #   run: |
+      #     kubectl create secret generic firebase-config \
+      #       --namespace ${{ env.NAMESPACE }} \
+      #       --from-literal=REACT_APP_FIREBASE_API_KEY=${{ secrets.REACT_APP_FIREBASE_API_KEY }} \
+      #       --from-literal=REACT_APP_FIREBASE_AUTH_DOMAIN=${{ secrets.REACT_APP_FIREBASE_AUTH_DOMAIN }} \
+      #       --from-literal=REACT_APP_FIREBASE_PROJECT_ID=${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }} \
+      #       --from-literal=REACT_APP_FIREBASE_STORAGE_BUCKET=${{ secrets.REACT_APP_FIREBASE_STORAGE_BUCKET }} \
+      #       --from-literal=REACT_APP_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }} \
+      #       --from-literal=REACT_APP_FIREBASE_APP_ID=${{ secrets.REACT_APP_FIREBASE_APP_ID }} \
+      #       --from-literal=REACT_APP_FIREBASE_MEASUREMENT_ID=${{ secrets.REACT_APP_FIREBASE_MEASUREMENT_ID }} \
+      #       --dry-run=client -o yaml | kubectl apply -f -
+
+      # - name: Deploy to AKS
+      #   uses: azure/k8s-deploy@v1
+      #   with:
+      #     manifests: |
+      #       kubernetes/deployment.yml
+      #       kubernetes/service.yml
+      #     images: |
+      #       ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }}
+      #     namespace: ${{ env.NAMESPACE }}
+      #     strategy: recreate
