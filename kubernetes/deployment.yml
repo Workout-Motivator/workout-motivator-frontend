@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: workout-motivator-frontend
-        image: ${ACR_SERVER}/${IMAGE_NAME}:${IMAGE_TAG}
+        image: workoutmotivatoracr.azurecr.io/workout-motivator-frontend:latest
         ports:
         - containerPort: 80
         resources:
