@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workout-motivator-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: workout-motivator-frontend
+  template:
+    metadata:
+      labels:
+        app: workout-motivator-frontend
+    spec:
+      containers:
+      - name: workout-motivator-frontend
+        image: ${REGISTRY_LOGIN_SERVER}/workout-motivator-frontend:${IMAGE_TAG}
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+        env:
+        - name: NODE_ENV
+          value: "production"

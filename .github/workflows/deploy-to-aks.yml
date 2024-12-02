@@ -1,0 +1,55 @@
+name: Deploy to AKS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  CLUSTER_NAME: workout-motivator-dns-51e5cpxh    # Your AKS cluster name
+  CLUSTER_RESOURCE_GROUP: WAP    # Your resource group
+  NAMESPACE: workout-motivator    # Namespace in your AKS cluster
+  APP_NAME: workout-motivator-frontend    # Application name
+  
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Build and push image to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      
+      - run: |
+          docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ env.APP_NAME }}:${{ github.sha }}
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ env.APP_NAME }}:${{ github.sha }}
+      
+      - name: Set AKS context
+        uses: azure/aks-set-context@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          cluster-name: ${{ env.CLUSTER_NAME }}
+          resource-group: ${{ env.CLUSTER_RESOURCE_GROUP }}
+      
+      - name: Create namespace if doesn't exist
+        run: |
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy to AKS
+        uses: azure/k8s-deploy@v1
+        with:
+          manifests: |
+            kubernetes/deployment.yml
+            kubernetes/service.yml
+          images: |
+            ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ env.APP_NAME }}:${{ github.sha }}
+          namespace: ${{ env.NAMESPACE }}
