@@ -23,6 +23,13 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
       
+      - name: Login to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}
+          username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
+      
       - name: Build and push image to ACR
         run: |
           docker build . -t ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }} -t ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:latest --build-arg REACT_APP_FIREBASE_API_KEY=${{ secrets.REACT_APP_FIREBASE_API_KEY }} --build-arg REACT_APP_FIREBASE_AUTH_DOMAIN=${{ secrets.REACT_APP_FIREBASE_AUTH_DOMAIN }} --build-arg REACT_APP_FIREBASE_PROJECT_ID=${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }} --build-arg REACT_APP_FIREBASE_STORAGE_BUCKET=${{ secrets.REACT_APP_FIREBASE_STORAGE_BUCKET }} --build-arg REACT_APP_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }} --build-arg REACT_APP_FIREBASE_APP_ID=${{ secrets.REACT_APP_FIREBASE_APP_ID }} --build-arg REACT_APP_FIREBASE_MEASUREMENT_ID=${{ secrets.REACT_APP_FIREBASE_MEASUREMENT_ID }}
@@ -39,6 +46,15 @@ jobs:
       - name: Create namespace if doesn't exist
         run: |
           kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create ACR pull secret
+        run: |
+          kubectl create secret docker-registry acr-secret \
+            --namespace ${{ env.NAMESPACE }} \
+            --docker-server=${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }} \
+            --docker-username=${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }} \
+            --docker-password=${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }} \
+            --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Create Firebase configuration secret
         run: |

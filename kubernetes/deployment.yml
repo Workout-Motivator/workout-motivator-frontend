@@ -13,6 +13,8 @@ spec:
       labels:
         app: workout-motivator-frontend
     spec:
+      imagePullSecrets:
+      - name: acr-secret
       containers:
       - name: workout-motivator-frontend
         image: workoutmotivatoracr.azurecr.io/workout-motivator-frontend:latest
@@ -25,6 +27,7 @@ spec:
           limits:
             cpu: "250m"
             memory: "256Mi"
+        command: ["nginx", "-g", "daemon off;"]
         env:
         - name: NODE_ENV
           value: "production"
@@ -65,5 +68,3 @@ spec:
             secretKeyRef:
               name: firebase-config
               key: REACT_APP_FIREBASE_MEASUREMENT_ID
-      imagePullSecrets:
-      - name: acr-secret
