@@ -1,6 +1,15 @@
-FROM node:18-alpine as builder
+FROM node:18-alpine AS builder
 
 WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
 
 # Add build-time variables
 ARG REACT_APP_FIREBASE_API_KEY
@@ -21,15 +30,6 @@ ENV REACT_APP_FIREBASE_MESSAGING_SENDER_ID=$REACT_APP_FIREBASE_MESSAGING_SENDER_
 ENV REACT_APP_FIREBASE_APP_ID=$REACT_APP_FIREBASE_APP_ID
 ENV REACT_APP_FIREBASE_MEASUREMENT_ID=$REACT_APP_FIREBASE_MEASUREMENT_ID
 ENV REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm ci
-
-# Copy the rest of the application
-COPY . .
 
 # Build the application
 RUN npm run build
