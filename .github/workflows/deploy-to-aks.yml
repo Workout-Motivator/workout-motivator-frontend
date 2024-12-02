@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  CLUSTER_NAME: workout-motivator-dns-51e5cpxh    # Your AKS cluster name
+  CLUSTER_NAME: workout-motivator    # Your AKS cluster name
   CLUSTER_RESOURCE_GROUP: WAP    # Your resource group
   NAMESPACE: workout-motivator    # Namespace in your AKS cluster
   APP_NAME: workout-motivator-frontend    # Application name
