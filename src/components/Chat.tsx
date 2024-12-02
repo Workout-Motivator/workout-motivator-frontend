@@ -5,12 +5,11 @@ import {
   TextField,
   Typography,
   IconButton,
-  List,
-  ListItem,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { auth } from '../firebase';
 import { ChatMessage } from '../types/chat';
+import { useTheme, Theme } from '@mui/material/styles';
 
 interface ChatProps {
   partnerId: string;
@@ -23,58 +22,52 @@ const Chat: React.FC<ChatProps> = ({ partnerId, partnerName, messages, onSendMes
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
-  const previousMessageCount = useRef(messages.length);
+  const theme = useTheme();
 
-  const scrollToBottom = useCallback(() => {
-    if (shouldScrollToBottom && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [shouldScrollToBottom]);
-
-  // Handle scroll events to track if user is at bottom
-  const handleScroll = useCallback(() => {
-    if (chatContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-      const isAtBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 50;
-      setShouldScrollToBottom(isAtBottom);
-    }
-  }, []);
-
-  // Effect for handling new messages and scrolling
   useEffect(() => {
-    if (messages.length > previousMessageCount.current) {
-      const lastMessage = messages[messages.length - 1];
-      const isOwnMessage = lastMessage?.uid === auth.currentUser?.uid;
-      
-      if (isOwnMessage || shouldScrollToBottom) {
-        scrollToBottom();
-      }
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-    previousMessageCount.current = messages.length;
-  }, [messages, scrollToBottom]);
+  }, [messages]); // Scroll when messages change
+
+  useEffect(() => {
+    // Initial scroll to bottom when component mounts
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, []); // Empty dependency array for mount only
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (input.trim()) {
       onSendMessage(input);
       setInput('');
-      setShouldScrollToBottom(true);
     }
   };
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+    <Box sx={{ 
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      overflow: 'hidden',
+      bgcolor: 'background.default',
+      borderRadius: '4px',
+      border: '1px solid rgba(0, 0, 0, 0.12)'
+    }}>
+      <Box sx={{ 
+        p: 2, 
+        borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
+        bgcolor: 'background.paper'
+      }}>
         <Typography variant="h6">{partnerName}</Typography>
       </Box>
 
       <Box
         ref={chatContainerRef}
-        onScroll={handleScroll}
         sx={{
-          flexGrow: 1,
-          overflow: 'auto',
+          flex: 1,
+          overflowY: 'auto',
           p: 2,
           display: 'flex',
           flexDirection: 'column',
@@ -87,21 +80,48 @@ const Chat: React.FC<ChatProps> = ({ partnerId, partnerName, messages, onSendMes
             sx={{
               alignSelf: message.uid === auth.currentUser?.uid ? 'flex-end' : 'flex-start',
               maxWidth: '70%',
+              mb: 1,
             }}
           >
-            <Paper
-              elevation={1}
+            <Box
               sx={{
-                p: 1,
-                bgcolor: message.uid === auth.currentUser?.uid ? 'primary.main' : 'grey.100',
-                color: message.uid === auth.currentUser?.uid ? 'primary.contrastText' : 'text.primary',
+                p: 1.5,
+                borderRadius: '4px',
+                bgcolor: message.uid === auth.currentUser?.uid 
+                  ? 'primary.main' 
+                  : (theme: Theme) => theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100',
+                color: message.uid === auth.currentUser?.uid 
+                  ? 'primary.contrastText' 
+                  : 'text.primary',
+                border: message.uid === auth.currentUser?.uid 
+                  ? 'none' 
+                  : (theme: Theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
               }}
             >
-              <Typography variant="body1">{message.text}</Typography>
-              <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                {message.createdAt?.toDate().toLocaleTimeString()}
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  wordBreak: 'break-word',
+                  whiteSpace: 'pre-wrap',
+                  fontSize: '0.9375rem',
+                  lineHeight: 1.5,
+                }}
+              >
+                {message.text}
               </Typography>
-            </Paper>
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  display: 'block',
+                  mt: 0.5,
+                  opacity: 0.7,
+                  fontSize: '0.75rem',
+                  textAlign: message.uid === auth.currentUser?.uid ? 'right' : 'left',
+                }}
+              >
+                {message.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Typography>
+            </Box>
           </Box>
         ))}
         <div ref={messagesEndRef} />
@@ -111,10 +131,10 @@ const Chat: React.FC<ChatProps> = ({ partnerId, partnerName, messages, onSendMes
         component="form"
         onSubmit={handleSubmit}
         sx={{
+          display: 'flex',
+          gap: 1,
           p: 2,
-          borderTop: 1,
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
+          borderTop: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
         }}
       >
         <TextField
@@ -122,11 +142,25 @@ const Chat: React.FC<ChatProps> = ({ partnerId, partnerName, messages, onSendMes
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."
-          variant="outlined"
           size="small"
-          autoComplete="off"
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+            }
+          }}
         />
-        <IconButton type="submit">
+        <IconButton 
+          type="submit"
+          color="primary"
+          sx={{
+            borderRadius: '4px',
+            backgroundColor: 'primary.main',
+            color: 'primary.contrastText',
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+            },
+          }}
+        >
           <SendIcon />
         </IconButton>
       </Box>

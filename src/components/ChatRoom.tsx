@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Box,
-  Paper,
   Typography,
   List,
   ListItem,
@@ -68,7 +67,6 @@ const ChatRoom: React.FC = () => {
 
     return () => {
       unsubscribePartners();
-      // Cleanup any existing unread message listeners
       Object.values(unreadMessageListeners.current).forEach(unsubscribe => unsubscribe());
     };
   }, []);
@@ -76,11 +74,9 @@ const ChatRoom: React.FC = () => {
   useEffect(() => {
     if (!auth.currentUser) return;
 
-    // Cleanup previous listeners
     Object.values(unreadMessageListeners.current).forEach(unsubscribe => unsubscribe());
     unreadMessageListeners.current = {};
 
-    // Setup new listeners for each partner
     partners.forEach(partner => {
       const messagesQuery = query(
         collection(db, 'messages'),
@@ -138,7 +134,6 @@ const ChatRoom: React.FC = () => {
 
   const handlePartnerSelect = async (partner: Partner) => {
     try {
-      // Update both states synchronously
       setSelectedPartnerId(partner.id);
       setUnreadMessages(prev => ({
         ...prev,
@@ -147,7 +142,6 @@ const ChatRoom: React.FC = () => {
 
       if (!auth.currentUser) return;
 
-      // Mark messages as read in background
       const messagesQuery = query(
         collection(db, 'messages'),
         where('partnerId', '==', partner.id),
@@ -191,51 +185,115 @@ const ChatRoom: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', height: 'calc(100vh - 64px)' }}>
-      {/* Partners List */}
-      <Paper sx={{ width: 300, overflow: 'auto', borderRadius: 0 }}>
-        <Typography variant="h6" sx={{ p: 2 }}>
-          Chat with Partners
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: '300px 1fr',
+        gap: 2,
+        height: 'calc(100vh - 200px)',
+        minHeight: '600px',
+        bgcolor: 'background.paper',
+        border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
+        borderRadius: '4px',
+        overflow: 'hidden',
+      }}
+    >
+      <Box
+        sx={{
+          borderRight: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
+          overflowY: 'auto',
+          height: '100%',
+        }}
+      >
+        <Typography variant="h6" sx={{ p: 2, borderBottom: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}` }}>
+          Chat Partners
         </Typography>
-        <Divider />
-        <List>
+        <List sx={{ p: 0 }}>
           {partners.map((partner) => (
             <ListItem
               key={partner.id}
-              button
-              selected={selectedPartnerId === partner.id}
               onClick={() => handlePartnerSelect(partner)}
               sx={{
-                bgcolor: selectedPartnerId === partner.id ? 'action.selected' : 'inherit',
+                cursor: 'pointer',
+                bgcolor: selectedPartnerId === partner.id 
+                  ? (theme) => theme.palette.mode === 'dark' 
+                    ? 'rgba(255, 255, 255, 0.08)' 
+                    : 'rgba(0, 0, 0, 0.04)'
+                  : 'transparent',
                 '&:hover': {
-                  bgcolor: 'action.hover',
+                  bgcolor: (theme) => theme.palette.mode === 'dark' 
+                    ? 'rgba(255, 255, 255, 0.08)' 
+                    : 'rgba(0, 0, 0, 0.04)',
                 },
+                borderBottom: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
               }}
             >
               <ListItemAvatar>
-                <Avatar>{partner.username[0].toUpperCase()}</Avatar>
+                <Avatar
+                  sx={{
+                    bgcolor: 'primary.main',
+                    width: 40,
+                    height: 40,
+                    borderRadius: '4px',
+                  }}
+                >
+                  {partner.username.charAt(0).toUpperCase()}
+                </Avatar>
               </ListItemAvatar>
-              <ListItemText primary={partner.username} />
+              <ListItemText
+                primary={partner.username}
+                sx={{
+                  '& .MuiListItemText-primary': {
+                    color: 'text.primary',
+                    fontWeight: 500,
+                  },
+                }}
+              />
               {unreadMessages[partner.id] > 0 && (
-                <Badge badgeContent={unreadMessages[partner.id]} color="primary" />
+                <Box
+                  sx={{
+                    minWidth: 20,
+                    height: 20,
+                    borderRadius: '10px',
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
+                    ml: 1,
+                  }}
+                >
+                  {unreadMessages[partner.id]}
+                </Box>
               )}
             </ListItem>
           ))}
         </List>
-      </Paper>
+      </Box>
 
-      {/* Chat Area */}
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-        {selectedPartner && selectedPartnerId ? (
-          <Chat 
+      <Box sx={{ flexGrow: 1 }}>
+        {selectedPartner ? (
+          <Chat
             partnerId={selectedPartner.id}
             partnerName={selectedPartner.username}
-            messages={messages[selectedPartnerId] || []}
+            messages={messages[selectedPartner.id] || []}
             onSendMessage={handleSendMessage}
           />
         ) : (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-            <Typography variant="h6" color="textSecondary">
+          <Box
+            sx={{
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
+              borderRadius: '4px',
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Typography variant="body1" color="text.secondary">
               Select a partner to start chatting
             </Typography>
           </Box>
