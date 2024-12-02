@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: workout-motivator-frontend
-        image: ${REGISTRY_LOGIN_SERVER}/workout-motivator-frontend:${IMAGE_TAG}
+        image: ${REGISTRY_LOGIN_SERVER}/${APP_NAME}:${GITHUB_SHA}
         ports:
         - containerPort: 80
         resources:
