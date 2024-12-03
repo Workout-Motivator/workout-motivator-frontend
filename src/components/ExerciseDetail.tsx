@@ -1,103 +1,187 @@
-import React from 'react';
-import { Exercise } from '../types/exercise';
-import { Card, CardContent, CardMedia, Typography, Box, Chip, Divider } from '@mui/material';
-import { FitnessCenter, Speed, Category } from '@mui/icons-material';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Box, Card, CardContent, CardMedia, Typography, Button, CircularProgress, Chip, Divider } from '@mui/material';
+import { FitnessCenter, Speed, Category, ArrowBack } from '@mui/icons-material';
 
-interface ExerciseDetailProps {
-    exercise: Exercise;
+interface Exercise {
+    title: string;
+    description: string;
+    category: string;
+    difficulty: string;
+    instructions: string[];
+    benefits: string[];
+    muscles_worked: string[];
+    variations: string[];
+    image_path?: string;
+    animation_path?: string;
 }
 
-const ExerciseDetail: React.FC<ExerciseDetailProps> = ({ exercise }) => {
-    return (
-        <Card sx={{ maxWidth: '100%', mb: 2 }}>
-            <Box sx={{ position: 'relative' }}>
-                {exercise.animation_path ? (
-                    <CardMedia
-                        component="img"
-                        height="300"
-                        image={exercise.animation_path}
-                        alt={exercise.title}
-                        sx={{ objectFit: 'contain' }}
-                    />
-                ) : exercise.image_path ? (
-                    <CardMedia
-                        component="img"
-                        height="300"
-                        image={exercise.image_path}
-                        alt={exercise.title}
-                        sx={{ objectFit: 'contain' }}
-                    />
-                ) : null}
+const ExerciseDetail: React.FC = () => {
+    const { title } = useParams<{ title: string }>();
+    const navigate = useNavigate();
+    const [exercise, setExercise] = useState<Exercise | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchExercise = async () => {
+            try {
+                setLoading(true);
+                const response = await fetch(`http://localhost:8000/workouts/assets/exercise/${encodeURIComponent(title || '')}`);
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Exercise not found');
+                    }
+                    throw new Error('Failed to fetch exercise details');
+                }
+                const data = await response.json();
+                setExercise(data);
+                setError(null);
+            } catch (error) {
+                setError(error instanceof Error ? error.message : 'Failed to fetch exercise details');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (title) {
+            fetchExercise();
+        }
+    }, [title]);
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+                <CircularProgress />
             </Box>
+        );
+    }
+
+    if (error || !exercise) {
+        return (
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography color="error" variant="h6" gutterBottom>
+                    {error || 'Exercise not found'}
+                </Typography>
+                <Button
+                    startIcon={<ArrowBack />}
+                    onClick={() => navigate('/exercises')}
+                    variant="contained"
+                    color="primary"
+                    sx={{ mt: 2 }}
+                >
+                    Back to Exercises
+                </Button>
+            </Box>
+        );
+    }
+
+    return (
+        <Box sx={{ p: 3, maxWidth: 'lg', mx: 'auto' }}>
+            <Button
+                startIcon={<ArrowBack />}
+                onClick={() => navigate('/exercises')}
+                sx={{ mb: 3 }}
+            >
+                Back to Exercises
+            </Button>
             
-            <CardContent>
-                <Typography variant="h5" component="div" gutterBottom>
-                    {exercise.title}
-                </Typography>
+            <Card sx={{ mb: 4 }}>
+                {(exercise.animation_path || exercise.image_path) && (
+                    <CardMedia
+                        component="img"
+                        height="400"
+                        image={exercise.animation_path ? `http://localhost:8000${exercise.animation_path}` : `http://localhost:8000${exercise.image_path}`}
+                        alt={exercise.title}
+                        sx={{ objectFit: 'contain', bgcolor: 'background.paper' }}
+                    />
+                )}
                 
-                <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                    <Chip 
-                        icon={<Category />} 
-                        label={exercise.category} 
-                        color="primary" 
-                        variant="outlined" 
-                    />
-                    <Chip 
-                        icon={<Speed />} 
-                        label={exercise.difficulty} 
-                        color="secondary" 
-                        variant="outlined" 
-                    />
-                    {exercise.muscles_worked && (
-                        <Chip 
-                            icon={<FitnessCenter />} 
-                            label={exercise.muscles_worked} 
-                            color="success" 
-                            variant="outlined" 
-                        />
-                    )}
-                </Box>
+                <CardContent>
+                    <Box sx={{ mb: 3 }}>
+                        <Typography variant="h4" component="h1" gutterBottom>
+                            {exercise.title}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                            <Chip 
+                                icon={<Category />} 
+                                label={exercise.category} 
+                                color="primary" 
+                                variant="outlined"
+                            />
+                            <Chip 
+                                icon={<Speed />} 
+                                label={exercise.difficulty} 
+                                color="secondary" 
+                                variant="outlined"
+                            />
+                        </Box>
+                        <Typography variant="body1" color="text.secondary">
+                            {exercise.description}
+                        </Typography>
+                    </Box>
 
-                <Typography variant="body1" color="text.secondary" paragraph>
-                    {exercise.description}
-                </Typography>
+                    <Divider sx={{ my: 3 }} />
 
-                {exercise.instructions && (
-                    <>
-                        <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                    <Box sx={{ mb: 3 }}>
+                        <Typography variant="h6" gutterBottom>
                             Instructions
                         </Typography>
-                        <Typography variant="body2" paragraph>
-                            {exercise.instructions}
-                        </Typography>
-                        <Divider sx={{ my: 2 }} />
-                    </>
-                )}
+                        <Box component="ol" sx={{ pl: 2 }}>
+                            {exercise.instructions.map((instruction, index) => (
+                                <Typography component="li" key={index} sx={{ mb: 1 }}>
+                                    {instruction}
+                                </Typography>
+                            ))}
+                        </Box>
+                    </Box>
 
-                {exercise.benefits && (
-                    <>
+                    <Box sx={{ mb: 3 }}>
                         <Typography variant="h6" gutterBottom>
                             Benefits
                         </Typography>
-                        <Typography variant="body2" paragraph>
-                            {exercise.benefits}
-                        </Typography>
-                        <Divider sx={{ my: 2 }} />
-                    </>
-                )}
+                        <Box component="ul" sx={{ pl: 2 }}>
+                            {exercise.benefits.map((benefit, index) => (
+                                <Typography component="li" key={index} sx={{ mb: 1 }}>
+                                    {benefit}
+                                </Typography>
+                            ))}
+                        </Box>
+                    </Box>
 
-                {exercise.variations && (
-                    <>
+                    <Box sx={{ mb: 3 }}>
                         <Typography variant="h6" gutterBottom>
-                            Variations & Alternatives
+                            Muscles Worked
                         </Typography>
-                        <Typography variant="body2" paragraph>
-                            {exercise.variations}
-                        </Typography>
-                    </>
-                )}
-            </CardContent>
-        </Card>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                            {exercise.muscles_worked.map((muscle, index) => (
+                                <Chip
+                                    key={index}
+                                    icon={<FitnessCenter />}
+                                    label={muscle}
+                                    variant="outlined"
+                                />
+                            ))}
+                        </Box>
+                    </Box>
+
+                    {exercise.variations.length > 0 && (
+                        <Box>
+                            <Typography variant="h6" gutterBottom>
+                                Variations
+                            </Typography>
+                            <Box component="ul" sx={{ pl: 2 }}>
+                                {exercise.variations.map((variation, index) => (
+                                    <Typography component="li" key={index} sx={{ mb: 1 }}>
+                                        {variation}
+                                    </Typography>
+                                ))}
+                            </Box>
+                        </Box>
+                    )}
+                </CardContent>
+            </Card>
+        </Box>
     );
 };
 

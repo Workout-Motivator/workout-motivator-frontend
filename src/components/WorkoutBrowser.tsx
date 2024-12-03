@@ -6,24 +6,28 @@ import {
   CardMedia,
   Typography,
   Grid,
-  Tabs,
-  Tab,
   CircularProgress,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Stack,
+  Chip,
+  Collapse,
+  Container,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  InputAdornment,
+  SelectChangeEvent,
 } from '@mui/material';
-import { useAuth } from '../auth/AuthContext';
+import { Search, FitnessCenter, Speed } from '@mui/icons-material';
 import { API_BASE_URL } from '../config';
 
 interface Exercise {
   id: number;
-  title: string;
-  instructions: string;
-  benefits: string;
-  image_paths: string; // JSON string of image paths
+  name: string;
+  sets: number;
+  reps: number;
+  workout_asset_id: number;
 }
 
 interface WorkoutAsset {
@@ -35,245 +39,301 @@ interface WorkoutAsset {
   instructions: string;
   benefits: string;
   muscles_worked: string;
-  variations: string;
+  variations?: string;
   image_path: string;
-  animation_path: string | null;
+  animation_path?: string;
 }
 
-interface WorkoutAssetDetail extends WorkoutAsset {
-  exercises: Exercise[];
-}
+const WorkoutCard: React.FC<{ workout: WorkoutAsset }> = ({ workout }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [workoutDetails, setWorkoutDetails] = useState<WorkoutAsset | null>(null);
+  
+  const getImageUrl = (path: string | null) => {
+    if (!path) return '';
+    return `${API_BASE_URL}/${path}`;
+  };
 
-const WorkoutBrowser: React.FC = () => {
-  const { user } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [categories, setCategories] = useState<string[]>([]);
-  const [workouts, setWorkouts] = useState<WorkoutAsset[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedWorkout, setSelectedWorkout] = useState<WorkoutAssetDetail | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  useEffect(() => {
-    // Fetch categories
-    fetch(`${API_BASE_URL}/api/workouts/assets/categories`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => setCategories(data))
-      .catch(error => console.error('Error fetching categories:', error));
-
-    // Fetch all workouts
-    fetch(`${API_BASE_URL}/api/workouts/assets`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        setWorkouts(data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error fetching workouts:', error);
-        setLoading(false);
-      });
-  }, []);
-
-  const filteredWorkouts = selectedCategory
-    ? workouts.filter(workout => workout.category === selectedCategory)
-    : workouts;
-
-  const handleWorkoutClick = async (workout: WorkoutAsset) => {
+  const fetchWorkoutDetails = async () => {
+    if (workoutDetails || loading) return;
+    
     try {
-      const response = await fetch(`${API_BASE_URL}/api/workouts/assets/${workout.id}`);
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/api/workouts/assets/${workout.id}`, {
+        credentials: 'include'
+      });
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
       const data = await response.json();
-      setSelectedWorkout(data);
-      setDialogOpen(true);
+      setWorkoutDetails(data);
+      setExpanded(true);
     } catch (error) {
       console.error('Error fetching workout details:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleStartWorkout = async () => {
-    if (!selectedWorkout || !user) return;
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/workouts/user/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: selectedWorkout.title,
-          description: selectedWorkout.description,
-          date: new Date().toISOString(),
-          user_id: user.uid,
-        }),
-      });
-      await response.json();
-      setDialogOpen(false);
-      // You can add navigation to the workout tracker here
-    } catch (error) {
-      console.error('Error starting workout:', error);
+  const handleCardClick = () => {
+    if (expanded) {
+      setExpanded(false);
+    } else {
+      fetchWorkoutDetails();
     }
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Browse Workouts
-      </Typography>
-
-      <Box sx={{ mb: 3 }}>
-        <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-          Category
-        </label>
-        <select
-          id="category"
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+    <Card 
+      sx={{ 
+        height: '100%',
+        display: 'flex', 
+        flexDirection: 'column',
+        cursor: 'pointer',
+        bgcolor: 'rgba(38, 38, 38, 0.9)',
+        '&:hover': {
+          bgcolor: 'rgba(48, 48, 48, 0.9)',
+          transform: 'scale(1.02)',
+        },
+        transition: 'all 0.2s ease-in-out',
+        borderRadius: 2,
+      }}
+      onClick={handleCardClick}
+    >
+      <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <CardMedia
+          component="img"
+          height={200}
+          image={getImageUrl(workout.image_path)}
+          alt={workout.title}
+          sx={{ 
+            objectFit: 'contain',
+            bgcolor: 'transparent',
+            mb: 2,
+            borderRadius: 1,
+          }}
+        />
+        <Typography 
+          variant="h6" 
+          component="div" 
+          sx={{ 
+            color: '#fff',
+            mb: 1,
+            fontWeight: 500,
+          }}
         >
-          <option value="">All Categories</option>
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
+          {workout.title}
+        </Typography>
+        <Stack direction="row" spacing={1} mb={2}>
+          <Chip 
+            icon={<FitnessCenter sx={{ color: '#fff !important' }} />} 
+            label={workout.category} 
+            size="small"
+            sx={{
+              bgcolor: 'rgba(0, 200, 83, 0.2)',
+              color: '#fff',
+              '& .MuiChip-icon': {
+                color: '#fff',
+              },
+            }}
+          />
+          <Chip 
+            icon={<Speed sx={{ color: '#fff !important' }} />} 
+            label={workout.difficulty} 
+            size="small"
+            sx={{
+              bgcolor: 'rgba(255, 64, 129, 0.2)',
+              color: '#fff',
+              '& .MuiChip-icon': {
+                color: '#fff',
+              },
+            }}
+          />
+        </Stack>
+
+        <Collapse in={expanded} timeout="auto" unmountOnExit>
+          {loading ? (
+            <Box display="flex" justifyContent="center" my={2}>
+              <CircularProgress size={24} sx={{ color: '#00c853' }} />
+            </Box>
+          ) : workoutDetails ? (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="body2" sx={{ color: '#aaa', mb: 2 }}>
+                {workoutDetails.description}
+              </Typography>
+              
+              <Typography variant="subtitle2" sx={{ color: '#00c853', mb: 1 }}>
+                Instructions
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#aaa', mb: 2 }}>
+                {workoutDetails.instructions}
+              </Typography>
+
+              <Typography variant="subtitle2" sx={{ color: '#00c853', mb: 1 }}>
+                Benefits
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#aaa', mb: 2 }}>
+                {workoutDetails.benefits}
+              </Typography>
+
+              <Typography variant="subtitle2" sx={{ color: '#00c853', mb: 1 }}>
+                Muscles Worked
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#aaa', mb: 2 }}>
+                {workoutDetails.muscles_worked}
+              </Typography>
+
+              {workoutDetails.variations && (
+                <>
+                  <Typography variant="subtitle2" sx={{ color: '#00c853', mb: 1 }}>
+                    Variations
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#aaa', mb: 2 }}>
+                    {workoutDetails.variations}
+                  </Typography>
+                </>
+              )}
+            </Box>
+          ) : null}
+        </Collapse>
       </Box>
+    </Card>
+  );
+};
+
+const WorkoutBrowser: React.FC = () => {
+  const [workouts, setWorkouts] = useState<WorkoutAsset[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchWorkouts();
+    fetchCategories();
+  }, []);
+
+  const fetchWorkouts = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/workouts/assets`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch workouts');
+      const data = await response.json();
+      setWorkouts(data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching workouts:', error);
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/workouts/assets/categories`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch categories');
+      const data = await response.json();
+      setCategories(data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const handleCategoryChange = (event: SelectChangeEvent<string>) => {
+    setSelectedCategory(event.target.value);
+  };
+
+  const filteredWorkouts = workouts.filter(workout => {
+    const matchesCategory = !selectedCategory || workout.category === selectedCategory;
+    const matchesSearch = !searchQuery || 
+      workout.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      workout.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  return (
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={3}>
+          <FormControl fullWidth variant="outlined" sx={{ bgcolor: 'rgba(38, 38, 38, 0.9)', borderRadius: 1 }}>
+            <InputLabel sx={{ color: '#fff' }}>Category</InputLabel>
+            <Select
+              value={selectedCategory}
+              label="Category"
+              onChange={handleCategoryChange}
+              sx={{ 
+                color: '#fff',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.23)',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255, 255, 255, 0.4)',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#00c853',
+                },
+              }}
+            >
+              <MenuItem value="">All Categories</MenuItem>
+              {categories.map((category) => (
+                <MenuItem key={category} value={category}>
+                  {category}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} md={9}>
+          <TextField
+            fullWidth
+            label="Search exercises"
+            variant="outlined"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              bgcolor: 'rgba(38, 38, 38, 0.9)',
+              borderRadius: 1,
+              '& label': { color: '#aaa' },
+              '& input': { color: '#fff' },
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.23)',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.4)',
+              },
+              '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#00c853',
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: '#aaa' }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Grid>
+      </Grid>
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-          <CircularProgress />
+        <Box display="flex" justifyContent="center" mt={4}>
+          <CircularProgress sx={{ color: '#00c853' }} />
         </Box>
       ) : (
         <Grid container spacing={3}>
           {filteredWorkouts.map((workout) => (
-            <Grid item xs={12} sm={6} md={4} key={workout.id}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  cursor: 'pointer',
-                  '&:hover': { transform: 'scale(1.02)', transition: 'transform 0.2s' }
-                }}
-                onClick={() => handleWorkoutClick(workout)}
-              >
-                {workout.image_path && (
-                  <CardMedia
-                    component="img"
-                    height="200"
-                    image={`/static/exercises/${workout.image_path}`}
-                    alt={workout.title}
-                    sx={{ objectFit: 'cover' }}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      console.error(`Failed to load image: ${target.src}`);
-                      target.style.display = 'none';
-                    }}
-                  />
-                )}
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6" gutterBottom>
-                    {workout.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {workout.description}
-                  </Typography>
-                  <Typography variant="caption" color="primary">
-                    {workout.difficulty}
-                  </Typography>
-
-                  {/* Instructions Section */}
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-gray-700 mb-2">Instructions</h4>
-                    <p className="text-gray-600 whitespace-pre-line">{workout.instructions}</p>
-                  </div>
-
-                  {/* Benefits Section */}
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-gray-700 mb-2">Benefits</h4>
-                    <p className="text-gray-600 whitespace-pre-line">{workout.benefits}</p>
-                  </div>
-
-                  {/* Variations Section */}
-                  {workout.variations && (
-                    <div className="mb-4">
-                      <h4 className="font-semibold text-gray-700 mb-2">Variations & Alternatives</h4>
-                      <p className="text-gray-600 whitespace-pre-line">{workout.variations}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+            <Grid item key={workout.id} xs={12} sm={6} md={4} lg={3}>
+              <WorkoutCard workout={workout} />
             </Grid>
           ))}
         </Grid>
       )}
-
-      <Dialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        {selectedWorkout && (
-          <>
-            <DialogTitle>{selectedWorkout.title}</DialogTitle>
-            <DialogContent>
-              <Typography variant="subtitle1" gutterBottom>
-                Difficulty: {selectedWorkout.difficulty}
-              </Typography>
-              <Typography variant="body1" paragraph>
-                {selectedWorkout.description}
-              </Typography>
-              
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Exercises:
-              </Typography>
-              {selectedWorkout.exercises.map((exercise) => (
-                <Box key={exercise.id} sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    {exercise.title}
-                  </Typography>
-                  {JSON.parse(exercise.image_paths).map((path: string, index: number) => (
-                    <CardMedia
-                      key={index}
-                      component="img"
-                      image={`/media/${path}`}
-                      alt={exercise.title}
-                      sx={{ height: 200, mb: 1, objectFit: 'contain' }}
-                    />
-                  ))}
-                  <Typography variant="body2" paragraph>
-                    <strong>Instructions:</strong>
-                    <div dangerouslySetInnerHTML={{ __html: exercise.instructions }} />
-                  </Typography>
-                  <Typography variant="body2">
-                    <strong>Benefits:</strong>
-                    <div dangerouslySetInnerHTML={{ __html: exercise.benefits }} />
-                  </Typography>
-                </Box>
-              ))}
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDialogOpen(false)}>Close</Button>
-              <Button onClick={handleStartWorkout} variant="contained" color="primary">
-                Start Workout
-              </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
-    </Box>
+    </Container>
   );
 };
 

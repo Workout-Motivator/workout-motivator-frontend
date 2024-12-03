@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, useLocation, useNavigate, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme, Theme, ThemeOptions } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box, AppBar, Toolbar, Typography, Button, Container, CircularProgress, Tabs, Tab, IconButton } from '@mui/material';
@@ -10,6 +10,8 @@ import WorkoutBrowser from './components/WorkoutBrowser';
 import { AccountabilityPartner } from './components/AccountabilityPartner';
 import ChatRoom from './components/ChatRoom';
 import ExerciseList from './components/ExerciseList';
+import WorkoutTracker from './components/WorkoutTracker';
+import ExerciseDetail from './components/ExerciseDetail';
 import { query, collection, where, onSnapshot } from 'firebase/firestore';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -17,6 +19,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import PeopleIcon from '@mui/icons-material/People';
 import ChatIcon from '@mui/icons-material/Chat';
+import TimerIcon from '@mui/icons-material/Timer';
 import { User } from 'firebase/auth';
 
 const getDesignTokens = (mode: 'light' | 'dark'): ThemeOptions => ({
@@ -30,11 +33,11 @@ const getDesignTokens = (mode: 'light' | 'dark'): ThemeOptions => ({
     },
     background: {
       default: mode === 'light' ? '#f5f5f5' : '#121212',
-      paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
+      paper: mode === 'light' ? '#e8e8e8' : '#1e1e1e',
     },
     text: {
       primary: mode === 'light' ? '#2c3e50' : '#ffffff',
-      secondary: mode === 'light' ? '#7f8c8d' : '#b3b3b3',
+      secondary: mode === 'light' ? '#34495e' : '#b3b3b3',
     },
   },
   typography: {
@@ -113,10 +116,7 @@ function App() {
     return savedTab ? parseInt(savedTab) : 0;
   });
   const [unreadCount, setUnreadCount] = useState(0);
-  const [mode, setMode] = useState<'light' | 'dark'>(() => {
-    const savedMode = localStorage.getItem('themeMode');
-    return (savedMode as 'light' | 'dark') || 'light';
-  });
+  const [mode, setMode] = React.useState<'light' | 'dark'>('dark');
 
   const theme = React.useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
 
@@ -231,26 +231,35 @@ const AppContent: React.FC<AppContentProps> = ({ mode, toggleColorMode, value, s
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleTabChange = (newValue: number) => {
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
-    localStorage.setItem('selectedTab', newValue.toString());
-    const params = new URLSearchParams(window.location.search);
-    params.set('tab', newValue.toString());
-    navigate(`?${params.toString()}`, { replace: true });
+    switch (newValue) {
+      case 0:
+        navigate('/workouts');
+        break;
+      case 1:
+        navigate('/exercises');
+        break;
+      case 2:
+        navigate('/workout-tracker');
+        break;
+      case 3:
+        navigate('/partners');
+        break;
+      case 4:
+        navigate('/chat');
+        break;
+    }
   };
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const tabFromUrl = params.get('tab');
-    
-    if (tabFromUrl !== null && !isNaN(parseInt(tabFromUrl))) {
-      const tabIndex = parseInt(tabFromUrl);
-      setValue(tabIndex);
-      localStorage.setItem('selectedTab', tabIndex.toString());
-    } else {
-      navigate(`?tab=${value}`, { replace: true });
-    }
-  }, []); 
+    const path = location.pathname;
+    if (path.includes('/workouts')) setValue(0);
+    else if (path.includes('/exercises')) setValue(1);
+    else if (path.includes('/workout-tracker')) setValue(2);
+    else if (path.includes('/partners')) setValue(3);
+    else if (path.includes('/chat')) setValue(4);
+  }, [location.pathname]);
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -315,16 +324,19 @@ const AppContent: React.FC<AppContentProps> = ({ mode, toggleColorMode, value, s
         </Toolbar>
         <Tabs 
           value={value} 
-          onChange={(e, newValue) => handleTabChange(newValue)}
-          aria-label="navigation tabs"
+          onChange={handleTabChange}
+          aria-label="nav tabs"
           variant="fullWidth"
-          sx={{ 
-            '& .MuiTab-root': { 
-              color: (theme) => theme.palette.mode === 'light' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
-              '&.Mui-selected': { 
-                color: 'primary.main',
-              }
-            }
+          sx={{
+            '& .MuiTab-root': {
+              color: '#fff',
+              '&.Mui-selected': {
+                color: '#00c853',
+              },
+            },
+            borderBottom: 1,
+            borderColor: 'divider',
+            width: '100%'
           }}
         >
           <Tab 
@@ -342,29 +354,38 @@ const AppContent: React.FC<AppContentProps> = ({ mode, toggleColorMode, value, s
             aria-controls="nav-tabpanel-1" 
           />
           <Tab 
-            icon={<PeopleIcon />} 
+            icon={<TimerIcon sx={{ color: '#00c853' }} />} 
             iconPosition="start" 
-            label="Partners" 
+            label="Workout Tracker" 
             id="nav-tab-2" 
             aria-controls="nav-tabpanel-2" 
           />
           <Tab 
-            icon={
+            icon={<PeopleIcon />} 
+            iconPosition="start" 
+            label="Partners" 
+            id="nav-tab-3" 
+            aria-controls="nav-tabpanel-3" 
+          />
+          <Tab 
+            icon={/* eslint-disable-next-line react/jsx-wrap-multilines */
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <ChatIcon />
                 {unreadCount > 0 && (
                   <Box
+                    component="span"
                     sx={{
-                      backgroundColor: 'secondary.main',
-                      color: 'white',
+                      bgcolor: 'error.main',
                       borderRadius: '50%',
-                      width: 20,
-                      height: 20,
+                      width: 16,
+                      height: 16,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: '0.75rem',
-                      ml: 1,
+                      color: 'white',
+                      marginLeft: -0.5,
+                      marginTop: -0.5,
                     }}
                   >
                     {unreadCount}
@@ -374,8 +395,8 @@ const AppContent: React.FC<AppContentProps> = ({ mode, toggleColorMode, value, s
             }
             iconPosition="start"
             label="Chat"
-            id="nav-tab-3" 
-            aria-controls="nav-tabpanel-3"
+            id="nav-tab-4"
+            aria-controls="nav-tabpanel-4"
           />
         </Tabs>
       </AppBar>
@@ -389,18 +410,15 @@ const AppContent: React.FC<AppContentProps> = ({ mode, toggleColorMode, value, s
           height: '100%'
         }
       }}>
-        <TabPanel value={value} index={0}>
-          <WorkoutBrowser />
-        </TabPanel>
-        <TabPanel value={value} index={1}>
-          <ExerciseList />
-        </TabPanel>
-        <TabPanel value={value} index={2}>
-          <AccountabilityPartner onTabChange={handleTabChange} />
-        </TabPanel>
-        <TabPanel value={value} index={3}>
-          <ChatRoom />
-        </TabPanel>
+        <Routes>
+          <Route path="/" element={<Navigate to="/workouts" />} />
+          <Route path="/workouts" element={<WorkoutBrowser />} />
+          <Route path="/exercises" element={<ExerciseList />} />
+          <Route path="/exercise/:title" element={<ExerciseDetail />} />
+          <Route path="/workout-tracker" element={<WorkoutTracker />} />
+          <Route path="/partners" element={<AccountabilityPartner />} />
+          <Route path="/chat" element={<ChatRoom />} />
+        </Routes>
       </Container>
     </Box>
   );

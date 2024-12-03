@@ -1,127 +1,182 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Card, CardContent, Typography, TextField, Grid } from '@mui/material';
-import { db, auth } from '../firebase';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import {
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  CircularProgress,
+  Button,
+  Stack,
+  Chip,
+  IconButton,
+} from '@mui/material';
+import {
+  CalendarToday,
+  CheckCircle,
+  Delete,
+  FitnessCenter,
+  Timer,
+} from '@mui/icons-material';
+import { useAuth } from '../auth/AuthContext';
+import { API_BASE_URL } from '../config';
+import { format } from 'date-fns';
 
 interface Workout {
-  id?: string;
+  id: number;
   title: string;
   description: string;
   date: string;
   completed: boolean;
-  userId: string;
+  user_id: string;
 }
 
-export const WorkoutTracker: React.FC = () => {
+const WorkoutTracker: React.FC = () => {
+  const { user } = useAuth();
   const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [newWorkout, setNewWorkout] = useState<Omit<Workout, 'id' | 'userId'>>({
-    title: '',
-    description: '',
-    date: new Date().toISOString().split('T')[0],
-    completed: false,
-  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadWorkouts();
-  }, []);
+    if (user) {
+      fetchUserWorkouts();
+    }
+  }, [user]);
 
-  const loadWorkouts = async () => {
-    if (!auth.currentUser) return;
-
-    const workoutsRef = collection(db, 'workouts');
-    const q = query(workoutsRef, where('userId', '==', auth.currentUser.uid));
-    const querySnapshot = await getDocs(q);
-    
-    const workoutList: Workout[] = [];
-    querySnapshot.forEach((doc) => {
-      workoutList.push({ id: doc.id, ...doc.data() } as Workout);
-    });
-    
-    setWorkouts(workoutList);
+  const fetchUserWorkouts = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/workouts/user/${user?.uid}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch workouts');
+      const data = await response.json();
+      setWorkouts(data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching workouts:', error);
+      setLoading(false);
+    }
   };
 
-  const handleAddWorkout = async () => {
-    if (!auth.currentUser) return;
-
+  const handleCompleteWorkout = async (workoutId: number) => {
     try {
-      await addDoc(collection(db, 'workouts'), {
-        ...newWorkout,
-        userId: auth.currentUser.uid,
-        createdAt: new Date(),
+      const response = await fetch(`${API_BASE_URL}/api/workouts/${workoutId}/complete`, {
+        method: 'PUT',
+        credentials: 'include',
       });
-
-      setNewWorkout({
-        title: '',
-        description: '',
-        date: new Date().toISOString().split('T')[0],
-        completed: false,
-      });
-
-      loadWorkouts();
+      if (!response.ok) throw new Error('Failed to complete workout');
+      await fetchUserWorkouts();
     } catch (error) {
-      console.error('Error adding workout:', error);
+      console.error('Error completing workout:', error);
+    }
+  };
+
+  const handleDeleteWorkout = async (workoutId: number) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/workouts/${workoutId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to delete workout');
+      await fetchUserWorkouts();
+    } catch (error) {
+      console.error('Error deleting workout:', error);
     }
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Workout Tracker
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Typography variant="h4" sx={{ mb: 4, color: '#fff' }}>
+        My Workouts
       </Typography>
 
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Workout Title"
-                value={newWorkout.title}
-                onChange={(e) => setNewWorkout({ ...newWorkout, title: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="date"
-                value={newWorkout.date}
-                onChange={(e) => setNewWorkout({ ...newWorkout, date: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="Description"
-                value={newWorkout.description}
-                onChange={(e) => setNewWorkout({ ...newWorkout, description: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Button variant="contained" onClick={handleAddWorkout}>
-                Add Workout
-              </Button>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+      {loading ? (
+        <Box display="flex" justifyContent="center" mt={4}>
+          <CircularProgress sx={{ color: '#00c853' }} />
+        </Box>
+      ) : workouts.length === 0 ? (
+        <Card sx={{ bgcolor: 'rgba(38, 38, 38, 0.9)', p: 4, borderRadius: 2 }}>
+          <Typography variant="h6" align="center" sx={{ color: '#fff' }}>
+            No workouts found. Start by adding some exercises from the Exercise Browser!
+          </Typography>
+        </Card>
+      ) : (
+        <Grid container spacing={3}>
+          {workouts.map((workout) => (
+            <Grid item key={workout.id} xs={12} sm={6} md={4}>
+              <Card 
+                sx={{ 
+                  bgcolor: 'rgba(38, 38, 38, 0.9)',
+                  borderRadius: 2,
+                  height: '100%',
+                  transition: 'transform 0.2s',
+                  '&:hover': {
+                    transform: 'scale(1.02)',
+                  },
+                }}
+              >
+                <CardContent>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                    <Typography variant="h6" sx={{ color: '#fff' }}>
+                      {workout.title}
+                    </Typography>
+                    <Stack direction="row" spacing={1}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleCompleteWorkout(workout.id)}
+                        sx={{ 
+                          color: workout.completed ? '#00c853' : '#aaa',
+                          '&:hover': { color: '#00c853' }
+                        }}
+                      >
+                        <CheckCircle />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeleteWorkout(workout.id)}
+                        sx={{ 
+                          color: '#aaa',
+                          '&:hover': { color: '#ff1744' }
+                        }}
+                      >
+                        <Delete />
+                      </IconButton>
+                    </Stack>
+                  </Stack>
 
-      <Grid container spacing={2}>
-        {workouts.map((workout) => (
-          <Grid item xs={12} sm={6} md={4} key={workout.id}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{workout.title}</Typography>
-                <Typography color="textSecondary">
-                  {new Date(workout.date).toLocaleDateString()}
-                </Typography>
-                <Typography variant="body2">{workout.description}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    </Box>
+                  <Typography variant="body2" sx={{ color: '#aaa', mb: 2 }}>
+                    {workout.description}
+                  </Typography>
+
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <CalendarToday sx={{ color: '#aaa', fontSize: 16 }} />
+                    <Typography variant="body2" sx={{ color: '#aaa' }}>
+                      {format(new Date(workout.date), 'MMM d, yyyy')}
+                    </Typography>
+                  </Stack>
+
+                  <Stack direction="row" spacing={1} mt={2}>
+                    <Chip
+                      icon={<FitnessCenter sx={{ color: '#fff !important' }} />}
+                      label={workout.completed ? 'Completed' : 'In Progress'}
+                      size="small"
+                      sx={{
+                        bgcolor: workout.completed ? 'rgba(0, 200, 83, 0.2)' : 'rgba(255, 152, 0, 0.2)',
+                        color: '#fff',
+                        '& .MuiChip-icon': {
+                          color: '#fff',
+                        },
+                      }}
+                    />
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+    </Container>
   );
 };
+
+export default WorkoutTracker;

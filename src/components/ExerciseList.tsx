@@ -10,24 +10,22 @@ import {
   MenuItem, 
   FormControl, 
   InputLabel,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  IconButton,
-  CardActionArea,
   TextField,
   InputAdornment,
   Pagination,
-  CircularProgress
+  CircularProgress,
+  Chip
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
-import ExerciseDetail from './ExerciseDetail';
-import { Exercise } from '../types/exercise';
+import { useNavigate } from 'react-router-dom';
 
-interface WorkoutAsset extends Exercise {}
+interface WorkoutAsset {
+  id: string;
+  title: string;
+  category: string;
+  difficulty: string;
+  image_path: string;
+}
 
 interface PaginatedResponse {
   exercises: WorkoutAsset[];
@@ -37,13 +35,13 @@ interface PaginatedResponse {
 }
 
 const ExerciseList: React.FC = () => {
+  const navigate = useNavigate();
   const [exercises, setExercises] = useState<WorkoutAsset[]>([]);
   const [filteredExercises, setFilteredExercises] = useState<WorkoutAsset[]>([]);
   const [category, setCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedExercise, setSelectedExercise] = useState<WorkoutAsset | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -88,34 +86,31 @@ const ExerciseList: React.FC = () => {
 
   const fetchExercises = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const response = await fetch(
-        `http://localhost:8000/workouts/assets/?page=${page}&limit=12${
-          category ? `&category=${category}` : ''
-        }${searchQuery ? `&search=${searchQuery}` : ''}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          credentials: 'include',
-        }
-      );
+      let url = `http://localhost:8000/workouts/assets/?page=${page}&limit=12`;
+      if (category) {
+        url += `&category=${encodeURIComponent(category)}`;
+      }
+      if (searchQuery) {
+        url += `&search=${encodeURIComponent(searchQuery)}`;
+      }
+
+      const response = await fetch(url);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.detail || `HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data: PaginatedResponse = await response.json();
-      
       setExercises(data.exercises);
       setFilteredExercises(data.exercises);
       setTotalPages(data.pages);
     } catch (error) {
       console.error('Error fetching exercises:', error);
       setError(error instanceof Error ? error.message : 'Failed to fetch exercises');
+      setExercises([]);
+      setFilteredExercises([]);
     } finally {
       setLoading(false);
     }
@@ -136,61 +131,21 @@ const ExerciseList: React.FC = () => {
     setPage(1); // Reset to first page when category changes
   };
 
-  const handleExerciseClick = (exercise: WorkoutAsset) => {
-    setSelectedExercise(exercise);
-  };
-
-  const handleCloseDialog = () => {
-    setSelectedExercise(null);
-  };
-
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ 
         display: 'flex', 
         gap: 2, 
         mb: 3,
-        flexDirection: { xs: 'column', sm: 'row' },
-        alignItems: { xs: 'stretch', sm: 'center' }
+        flexDirection: { xs: 'column', sm: 'row' }
       }}>
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel>Category</InputLabel>
-          <Select
-            value={category}
-            label="Category"
-            onChange={handleCategoryChange}
-          >
-            <MenuItem value="">All</MenuItem>
-            {categories.map((cat) => (
-              <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
         <TextField
-          label="Search exercises"
+          fullWidth
           variant="outlined"
+          placeholder="Search exercises..."
           value={searchQuery}
           onChange={handleSearchChange}
-          sx={{ 
-            flexGrow: 1,
-            maxWidth: { sm: 300 }
-          }}
           InputProps={{
-            endAdornment: searchQuery && (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label="clear search"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setPage(1);
-                  }}
-                  edge="end"
-                >
-                  <CloseIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
             startAdornment: (
               <InputAdornment position="start">
                 <SearchIcon />
@@ -198,98 +153,96 @@ const ExerciseList: React.FC = () => {
             ),
           }}
         />
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel>Category</InputLabel>
+          <Select
+            value={category}
+            label="Category"
+            onChange={handleCategoryChange}
+          >
+            <MenuItem value="">All Categories</MenuItem>
+            {categories.map((cat) => (
+              <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Box>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
           <CircularProgress />
         </Box>
+      ) : error ? (
+        <Typography color="error" sx={{ textAlign: 'center', p: 3 }}>
+          {error}
+        </Typography>
       ) : (
         <>
-          <Grid container spacing={3}>
-            {filteredExercises.length > 0 ? (
-              filteredExercises.map((exercise) => (
-                <Grid item xs={12} sm={6} md={4} key={exercise.id}>
-                  <ExerciseDetail exercise={exercise} />
-                </Grid>
-              ))
-            ) : (
-              <Grid item xs={12}>
-                <Typography>No exercises found.</Typography>
+          <Grid container spacing={2}>
+            {filteredExercises.map((exercise) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={exercise.title}>
+                <Card 
+                  sx={{ 
+                    height: '100%',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'scale(1.02)',
+                      backgroundColor: 'action.hover',
+                    },
+                  }}
+                  onClick={() => {
+                    navigate(`/exercise/${exercise.title}`);
+                  }}
+                >
+                  {exercise.image_path && (
+                    <Box sx={{ position: 'relative', pt: '56.25%' }}> {/* 16:9 aspect ratio */}
+                      <Box
+                        component="img"
+                        src={`http://localhost:8000${exercise.image_path}`}
+                        alt={exercise.title}
+                        sx={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    </Box>
+                  )}
+                  <Box sx={{ p: 2 }}>
+                    <Typography variant="h6" gutterBottom>
+                      {exercise.title}
+                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {exercise.category}
+                      </Typography>
+                      <Chip 
+                        label={exercise.difficulty}
+                        color="primary"
+                        size="small"
+                        variant="outlined"
+                      />
+                    </Box>
+                  </Box>
+                </Card>
               </Grid>
-            )}
+            ))}
           </Grid>
 
-          {totalPages > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-              <Pagination 
-                count={totalPages} 
-                page={page} 
-                onChange={handlePageChange}
-                color="primary"
-                size="large"
-              />
-            </Box>
-          )}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={handlePageChange}
+              color="primary"
+            />
+          </Box>
         </>
       )}
-
-      {error && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Typography color="error">{error}</Typography>
-        </Box>
-      )}
-
-      <Dialog
-        open={Boolean(selectedExercise)}
-        onClose={handleCloseDialog}
-        maxWidth="md"
-        fullWidth
-      >
-        {selectedExercise && (
-          <>
-            <DialogTitle sx={{ m: 0, p: 2, pr: 6 }}>
-              {selectedExercise.title}
-              <IconButton
-                aria-label="close"
-                onClick={handleCloseDialog}
-                sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: 8,
-                  color: (theme) => theme.palette.grey[500],
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-              {selectedExercise.image_path && (
-                <Box
-                  component="img"
-                  sx={{
-                    width: '100%',
-                    maxHeight: '400px',
-                    objectFit: 'contain',
-                    mb: 2,
-                  }}
-                  src={`http://localhost:8000/static/${selectedExercise.image_path}`}
-                  alt={selectedExercise.title}
-                />
-              )}
-              <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                Category: {selectedExercise.category}
-              </Typography>
-              <Typography variant="body1" paragraph>
-                {selectedExercise.description}
-              </Typography>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDialog}>Close</Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
     </Box>
   );
 };
