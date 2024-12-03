@@ -22,6 +22,7 @@ import {
   Card,
   CardContent,
   Avatar,
+  Skeleton,
 } from '@mui/material';
 import { db, auth } from '../firebase';
 import {
@@ -113,10 +114,12 @@ export const AccountabilityPartner: React.FC<AccountabilityPartnerProps> = ({ on
     open: false,
     partner: null
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!auth.currentUser) return;
 
+    setLoading(true);
     // Listen for partner requests
     const requestsQuery = query(
       collection(db, 'partnerRequests'),
@@ -158,6 +161,7 @@ export const AccountabilityPartner: React.FC<AccountabilityPartnerProps> = ({ on
         });
       });
       setPartners(partnersList);
+      setLoading(false);
     });
 
     return () => {
@@ -300,9 +304,38 @@ export const AccountabilityPartner: React.FC<AccountabilityPartnerProps> = ({ on
             <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
               Your Partners
             </Typography>
-            {partners.length === 0 ? (
-              <Paper sx={{ p: 3, bgcolor: 'grey.50', textAlign: 'center' }}>
-                <Typography color="text.secondary">
+            {loading ? (
+              <Grid container spacing={2}>
+                {[1, 2, 3].map((key) => (
+                  <Grid item xs={12} sm={6} md={4} key={key}>
+                    <Card sx={{ height: '100%' }}>
+                      <CardContent>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                          <Skeleton variant="circular" width={56} height={56} sx={{ mr: 2 }} />
+                          <Box sx={{ width: '100%' }}>
+                            <Skeleton variant="text" width="80%" height={32} />
+                            <Skeleton variant="text" width="60%" />
+                          </Box>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Skeleton variant="rectangular" height={36} sx={{ flex: 2 }} />
+                          <Skeleton variant="rectangular" width={50} height={36} />
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : partners.length === 0 ? (
+              <Paper 
+                sx={{ 
+                  p: 3, 
+                  bgcolor: 'background.paper',
+                  textAlign: 'center',
+                  border: theme => `1px solid ${theme.palette.divider}`,
+                }}
+              >
+                <Typography color="text.primary">
                   You don't have any partners yet. Add a partner to get started!
                 </Typography>
               </Paper>
@@ -350,9 +383,9 @@ export const AccountabilityPartner: React.FC<AccountabilityPartnerProps> = ({ on
                             color="primary"
                             fullWidth
                             onClick={() => {
-                              if (onTabChange) {
-                                onTabChange(3); // Switch to chat tab (index 3)
-                              }
+                              // Store the partner ID for auto-opening in chat
+                              localStorage.setItem('lastSelectedPartnerId', partner.id);
+                              navigate('/chat');
                             }}
                             sx={{ 
                               flex: 2,
