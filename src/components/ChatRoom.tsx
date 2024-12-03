@@ -29,7 +29,10 @@ import { ChatMessage, Partner } from '../types/chat';
 
 const ChatRoom: React.FC = () => {
   const [partners, setPartners] = useState<Partner[]>([]);
-  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(() => {
+    // Try to get the last selected partner from localStorage
+    return localStorage.getItem('lastSelectedPartnerId');
+  });
   const [unreadMessages, setUnreadMessages] = useState<{[key: string]: number}>({});
   const [messages, setMessages] = useState<{[key: string]: ChatMessage[]}>({});
   const unreadMessageListeners = useRef<{[key: string]: () => void}>({});
@@ -37,6 +40,13 @@ const ChatRoom: React.FC = () => {
   const selectedPartner = useMemo(() => 
     partners.find(p => p.id === selectedPartnerId) || null
   , [partners, selectedPartnerId]);
+
+  // Save selected partner to localStorage whenever it changes
+  useEffect(() => {
+    if (selectedPartnerId) {
+      localStorage.setItem('lastSelectedPartnerId', selectedPartnerId);
+    }
+  }, [selectedPartnerId]);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -63,6 +73,13 @@ const ChatRoom: React.FC = () => {
         partnersList.push(newPartner);
       });
       setPartners(partnersList);
+
+      // If we have a stored partnerId but that partner no longer exists,
+      // clear the stored value
+      if (selectedPartnerId && !partnersList.some(p => p.id === selectedPartnerId)) {
+        localStorage.removeItem('lastSelectedPartnerId');
+        setSelectedPartnerId(null);
+      }
     });
 
     return () => {
