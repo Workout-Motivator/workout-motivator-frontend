@@ -1,147 +1,133 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  Box, 
-  Grid, 
-  Card, 
-  CardContent, 
-  Typography, 
-  Select,
-  SelectChangeEvent, 
-  MenuItem, 
-  FormControl, 
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  Box,
+  Typography,
+  FormControl,
   InputLabel,
+  Select,
+  MenuItem,
   TextField,
   InputAdornment,
   Pagination,
   CircularProgress,
-  Chip
+  Grid,
+  Paper,
+  SelectChangeEvent,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { useNavigate } from 'react-router-dom';
+
+const API_BASE_URL = 'http://localhost:8000';
 
 interface WorkoutAsset {
   id: string;
   title: string;
   category: string;
-  difficulty: string;
-  image_path: string;
 }
 
-interface PaginatedResponse {
-  exercises: WorkoutAsset[];
-  total: number;
-  page: number;
-  pages: number;
+interface CategoryCount {
+  category: string;
+  count: number;
 }
 
 const ExerciseList: React.FC = () => {
   const navigate = useNavigate();
   const [exercises, setExercises] = useState<WorkoutAsset[]>([]);
-  const [filteredExercises, setFilteredExercises] = useState<WorkoutAsset[]>([]);
   const [category, setCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []); // Only fetch categories once when component mounts
-
-  // Debounced search effect
-  useEffect(() => {
-    if (debounceTimeout) {
-      clearTimeout(debounceTimeout);
-    }
-
-    const timeout = setTimeout(() => {
-      fetchExercises();
-    }, 300); // Wait 300ms after last change before fetching
-
-    setDebounceTimeout(timeout);
-
-    return () => {
-      if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
-      }
-    };
-  }, [category, searchQuery, page]);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:8000/workouts/assets/categories');
+      const response = await fetch(`${API_BASE_URL}/workouts/assets/categories`, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`Failed to fetch categories: ${response.status}`);
       }
+      
       const data = await response.json();
-      setCategories(Array.isArray(data) ? data : []);
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid response format: expected an array');
+      }
+
+      const categoryList = data
+        .filter((item: CategoryCount) => item && typeof item === 'object' && item.category)
+        .map((item: CategoryCount) => item.category);
+
+      setCategories(categoryList);
+      setError(null);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      setCategories([]);
+      setError('Failed to fetch categories');
+      setCategories([]); // Reset categories on error
     }
-  };
+  }, []);
 
-  const fetchExercises = async () => {
+  const fetchExercises = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
-      let url = `http://localhost:8000/workouts/assets/?page=${page}&limit=12`;
-      if (category) {
-        url += `&category=${encodeURIComponent(category)}`;
-      }
-      if (searchQuery) {
-        url += `&search=${encodeURIComponent(searchQuery)}`;
-      }
-
-      const response = await fetch(url);
-
+      const response = await fetch(
+        `${API_BASE_URL}/workouts/assets?skip=${(page - 1) * 24}&limit=24${
+          category ? `&category=${encodeURIComponent(category)}` : ''
+        }${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`,
+        {
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
+      );
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error('Failed to fetch exercises');
       }
-
-      const data: PaginatedResponse = await response.json();
-      setExercises(data.exercises);
-      setFilteredExercises(data.exercises);
-      setTotalPages(data.pages);
+      
+      const data = await response.json();
+      setExercises(data.exercises || []);
+      setTotalPages(Math.ceil((data.total || 0) / 24));
+      setError(null);
     } catch (error) {
       console.error('Error fetching exercises:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch exercises');
-      setExercises([]);
-      setFilteredExercises([]);
+      setError('Failed to load exercises');
     } finally {
       setLoading(false);
     }
+  }, [page, category, searchQuery]);
+
+  const handleCategoryChange = useCallback((event: SelectChangeEvent<string>) => {
+    setCategory(event.target.value);
+    setPage(1); // Reset to first page when changing category
+  }, []);
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+    setPage(1);
   };
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    setPage(1); // Reset to first page when search changes
-  };
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
-  const handleCategoryChange = (event: SelectChangeEvent) => {
-    setCategory(event.target.value);
-    setPage(1); // Reset to first page when category changes
-  };
+  useEffect(() => {
+    fetchExercises();
+  }, [fetchExercises, page, category, searchQuery]);
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ 
-        display: 'flex', 
-        gap: 2, 
-        mb: 3,
-        flexDirection: { xs: 'column', sm: 'row' }
-      }}>
+    <Box sx={{ p: 3, height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
         <TextField
           fullWidth
-          variant="outlined"
           placeholder="Search exercises..."
           value={searchQuery}
           onChange={handleSearchChange}
@@ -154,95 +140,77 @@ const ExerciseList: React.FC = () => {
           }}
         />
         <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel>Category</InputLabel>
+          <InputLabel id="category-select-label">Category</InputLabel>
           <Select
+            labelId="category-select-label"
             value={category}
-            label="Category"
             onChange={handleCategoryChange}
+            label="Category"
           >
             <MenuItem value="">All Categories</MenuItem>
             {categories.map((cat) => (
-              <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+              <MenuItem key={cat} value={cat}>
+                {cat}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>
       </Box>
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-          <CircularProgress />
-        </Box>
-      ) : error ? (
-        <Typography color="error" sx={{ textAlign: 'center', p: 3 }}>
+      {error && (
+        <Typography color="error" sx={{ mb: 2 }}>
           {error}
         </Typography>
+      )}
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <CircularProgress />
+        </Box>
       ) : (
-        <>
+        <Box sx={{ flexGrow: 1, overflow: 'auto', mb: 2 }}>
           <Grid container spacing={2}>
-            {filteredExercises.map((exercise) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={exercise.title}>
-                <Card 
-                  sx={{ 
-                    height: '100%',
+            {exercises.map((exercise) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={exercise.id}>
+                <Paper
+                  sx={{
+                    p: 2.5,
                     cursor: 'pointer',
-                    transition: 'transform 0.2s ease-in-out',
+                    transition: 'all 0.2s',
                     '&:hover': {
-                      transform: 'scale(1.02)',
-                      backgroundColor: 'action.hover',
+                      bgcolor: 'action.hover',
+                      transform: 'translateY(-2px)',
                     },
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    minHeight: '80px',
+                    borderRadius: '8px',
                   }}
-                  onClick={() => {
-                    navigate(`/exercise/${exercise.title}`);
-                  }}
+                  onClick={() => navigate(`/exercise/${exercise.id}`)}
                 >
-                  {exercise.image_path && (
-                    <Box sx={{ position: 'relative', pt: '56.25%' }}> {/* 16:9 aspect ratio */}
-                      <Box
-                        component="img"
-                        src={`http://localhost:8000${exercise.image_path}`}
-                        alt={exercise.title}
-                        sx={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                        }}
-                      />
-                    </Box>
-                  )}
-                  <Box sx={{ p: 2 }}>
-                    <Typography variant="h6" gutterBottom>
-                      {exercise.title}
-                    </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        {exercise.category}
-                      </Typography>
-                      <Chip 
-                        label={exercise.difficulty}
-                        color="primary"
-                        size="small"
-                        variant="outlined"
-                      />
-                    </Box>
-                  </Box>
-                </Card>
+                  <Typography>{exercise.title}</Typography>
+                </Paper>
               </Grid>
             ))}
           </Grid>
 
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={handlePageChange}
-              color="primary"
-            />
-          </Box>
-        </>
+          {exercises.length === 0 && !loading && (
+            <Typography sx={{ textAlign: 'center', my: 4 }}>
+              No exercises found
+            </Typography>
+          )}
+        </Box>
       )}
+
+      <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1 }}>
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+        />
+      </Box>
     </Box>
   );
 };
