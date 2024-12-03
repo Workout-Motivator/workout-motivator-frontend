@@ -217,12 +217,15 @@ const WorkoutBrowser: React.FC = () => {
 
   const fetchWorkouts = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/workouts/assets`, {
+      const response = await fetch(`${API_BASE_URL}/workouts/assets`, {
         credentials: 'include',
       });
-      if (!response.ok) throw new Error('Failed to fetch workouts');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch workouts: ${errorText}`);
+      }
       const data = await response.json();
-      setWorkouts(data);
+      setWorkouts(Array.isArray(data) ? data : []);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching workouts:', error);
@@ -230,14 +233,22 @@ const WorkoutBrowser: React.FC = () => {
     }
   };
 
+  interface CategoryCount {
+    category: string;
+    count: number;
+  }
+
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/workouts/assets/categories`, {
+      const response = await fetch(`${API_BASE_URL}/workouts/assets/categories`, {
         credentials: 'include',
       });
-      if (!response.ok) throw new Error('Failed to fetch categories');
-      const data = await response.json();
-      setCategories(data);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch categories: ${errorText}`);
+      }
+      const data: CategoryCount[] = await response.json();
+      setCategories(data.map(item => item.category));
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
