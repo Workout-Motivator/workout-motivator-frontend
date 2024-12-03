@@ -6,9 +6,22 @@ A React TypeScript application for fitness tracking and partner accountability. 
 
 - User Authentication with Firebase
 - Real-time Chat with Workout Partners
-- Workout Planning and Tracking
-- Partner Matching System
+  - Persistent chat history
+  - Automatic chat partner selection
+  - Real-time message updates
+- Exercise Management
+  - Categorized exercise browser
+  - Advanced search and filtering
+  - Pagination support
+  - Exercise difficulty levels
+- Partner Management
+  - Partner request system
+  - Partner status tracking
+  - Direct chat access
 - Responsive Material-UI Design
+  - Mobile-first approach
+  - Dark theme support
+  - Modern UI components
 
 ## Prerequisites
 
