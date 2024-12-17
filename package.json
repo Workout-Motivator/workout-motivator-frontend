@@ -26,6 +26,13 @@
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^22.10.1",
+    "cross-env": "^7.0.3",
+    "wait-on": "^7.2.0"
+  },
   "scripts": {
     "start": "cross-env WATCHPACK_POLLING=true react-scripts start",
     "start:testenv": "cross-env REACT_APP_USE_EMULATORS=true react-scripts start",
@@ -51,11 +58,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "@playwright/test": "^1.49.1",
-    "@types/node": "^22.10.1",
-    "cross-env": "^7.0.3"
   }
 }
