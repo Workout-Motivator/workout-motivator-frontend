@@ -19,8 +19,8 @@ import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = 'http://localhost:8000';
 
-interface WorkoutAsset {
-  id: string;
+interface Exercise {
+  id: number;
   title: string;
   category: string;
 }
@@ -32,7 +32,7 @@ interface CategoryCount {
 
 const ExerciseList: React.FC = () => {
   const navigate = useNavigate();
-  const [exercises, setExercises] = useState<WorkoutAsset[]>([]);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [category, setCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
@@ -43,7 +43,7 @@ const ExerciseList: React.FC = () => {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/workouts/assets/categories`, {
+      const response = await fetch(`${API_BASE_URL}/exercises/categories`, {
         headers: {
           'Accept': 'application/json'
         }
@@ -53,16 +53,12 @@ const ExerciseList: React.FC = () => {
         throw new Error(`Failed to fetch categories: ${response.status}`);
       }
       
-      const data = await response.json();
+      const data: string[] = await response.json();
       if (!Array.isArray(data)) {
         throw new Error('Invalid response format: expected an array');
       }
 
-      const categoryList = data
-        .filter((item: CategoryCount) => item && typeof item === 'object' && item.category)
-        .map((item: CategoryCount) => item.category);
-
-      setCategories(categoryList);
+      setCategories(data);
       setError(null);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -75,7 +71,7 @@ const ExerciseList: React.FC = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `${API_BASE_URL}/workouts/assets?skip=${(page - 1) * 24}&limit=24${
+        `${API_BASE_URL}/exercises?skip=${(page - 1) * 24}&limit=24${
           category ? `&category=${encodeURIComponent(category)}` : ''
         }${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`,
         {
