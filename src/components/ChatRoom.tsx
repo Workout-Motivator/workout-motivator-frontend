@@ -175,8 +175,8 @@ const ChatRoom: React.FC = () => {
       });
 
       await batch.commit();
-    } catch (error: any) {
-      if (error.code !== 'permission-denied') {
+    } catch (error) {
+      if (error instanceof Error && error.message !== 'permission-denied') {
         console.error('Error handling partner selection:', error);
       }
     }
@@ -202,7 +202,7 @@ const ChatRoom: React.FC = () => {
   };
 
   return (
-    <Box
+    <Box data-testid="chat-room"
       sx={{
         display: 'grid',
         gridTemplateColumns: '300px 1fr',
@@ -225,11 +225,13 @@ const ChatRoom: React.FC = () => {
         <Typography variant="h6" sx={{ p: 2, borderBottom: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}` }}>
           Chat Partners
         </Typography>
-        <List sx={{ p: 0 }}>
+        <List data-testid="chat-partner-list" sx={{ p: 0 }}>
           {partners.map((partner) => (
             <ListItem
               key={partner.id}
+              button
               onClick={() => handlePartnerSelect(partner)}
+              data-testid="chat-partner-item"
               sx={{
                 cursor: 'pointer',
                 bgcolor: selectedPartnerId === partner.id 
@@ -267,23 +269,11 @@ const ChatRoom: React.FC = () => {
                 }}
               />
               {unreadMessages[partner.id] > 0 && (
-                <Box
-                  sx={{
-                    minWidth: 20,
-                    height: 20,
-                    borderRadius: '10px',
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.75rem',
-                    fontWeight: 'bold',
-                    ml: 1,
-                  }}
-                >
-                  {unreadMessages[partner.id]}
-                </Box>
+                <Badge
+                  badgeContent={unreadMessages[partner.id]}
+                  color="primary"
+                  data-testid="unread-badge"
+                />
               )}
             </ListItem>
           ))}
