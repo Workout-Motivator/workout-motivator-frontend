@@ -8,10 +8,10 @@ interface Exercise {
     description: string;
     category: string;
     difficulty: string;
-    instructions: string[];
-    benefits: string[];
-    muscles_worked: string[];
-    variations: string[];
+    instructions: string;
+    benefits: string;
+    muscles_worked: string;
+    variations: string;
     image_path?: string;
     animation_path?: string;
 }
@@ -27,7 +27,7 @@ const ExerciseDetail: React.FC = () => {
         const fetchExercise = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`http://localhost:8000/workouts/assets/exercise/${encodeURIComponent(title || '')}`);
+                const response = await fetch(`http://localhost:8000/exercises/${encodeURIComponent(title || '')}`);
                 if (!response.ok) {
                     if (response.status === 404) {
                         throw new Error('Exercise not found');
@@ -127,58 +127,37 @@ const ExerciseDetail: React.FC = () => {
                         <Typography variant="h6" gutterBottom>
                             Instructions
                         </Typography>
-                        <Box component="ol" sx={{ pl: 2 }}>
-                            {exercise.instructions.map((instruction, index) => (
-                                <Typography component="li" key={index} sx={{ mb: 1 }}>
-                                    {instruction}
-                                </Typography>
-                            ))}
-                        </Box>
+                        <Typography variant="body1" color="text.secondary">
+                            {exercise.instructions}
+                        </Typography>
                     </Box>
 
                     <Box sx={{ mb: 3 }}>
                         <Typography variant="h6" gutterBottom>
                             Benefits
                         </Typography>
-                        <Box component="ul" sx={{ pl: 2 }}>
-                            {exercise.benefits.map((benefit, index) => (
-                                <Typography component="li" key={index} sx={{ mb: 1 }}>
-                                    {benefit}
-                                </Typography>
-                            ))}
-                        </Box>
+                        <Typography variant="body1" color="text.secondary">
+                            {exercise.benefits}
+                        </Typography>
                     </Box>
 
                     <Box sx={{ mb: 3 }}>
                         <Typography variant="h6" gutterBottom>
                             Muscles Worked
                         </Typography>
-                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                            {exercise.muscles_worked.map((muscle, index) => (
-                                <Chip
-                                    key={index}
-                                    icon={<FitnessCenter />}
-                                    label={muscle}
-                                    variant="outlined"
-                                />
-                            ))}
-                        </Box>
+                        <Typography variant="body1" color="text.secondary">
+                            {exercise.muscles_worked}
+                        </Typography>
                     </Box>
 
-                    {exercise.variations.length > 0 && (
-                        <Box>
-                            <Typography variant="h6" gutterBottom>
-                                Variations
-                            </Typography>
-                            <Box component="ul" sx={{ pl: 2 }}>
-                                {exercise.variations.map((variation, index) => (
-                                    <Typography component="li" key={index} sx={{ mb: 1 }}>
-                                        {variation}
-                                    </Typography>
-                                ))}
-                            </Box>
-                        </Box>
-                    )}
+                    <Box sx={{ mb: 3 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Variations
+                        </Typography>
+                        <Typography variant="body1" color="text.secondary">
+                            {exercise.variations}
+                        </Typography>
+                    </Box>
                 </CardContent>
             </Card>
         </Box>
