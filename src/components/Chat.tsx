@@ -7,7 +7,7 @@ import {
   IconButton,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import { auth } from '../firebase';
+import { auth } from '../firebaseConfig';
 import { ChatMessage } from '../types/chat';
 import { useTheme, Theme } from '@mui/material/styles';
 

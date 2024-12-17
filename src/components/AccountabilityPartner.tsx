@@ -24,7 +24,7 @@ import {
   Avatar,
   Skeleton,
 } from '@mui/material';
-import { db, auth } from '../firebase';
+import { db, auth } from '../firebaseConfig';
 import {
   collection,
   query,
@@ -51,7 +51,7 @@ interface PartnerRequest {
   id: string;
   fromEmail: string;
   fromUsername: string;
-  createdAt: any;
+  createdAt: Date | { seconds: number; nanoseconds: number } | null;
 }
 
 interface DeleteDialogProps {
@@ -435,6 +435,7 @@ export const AccountabilityPartner: React.FC<AccountabilityPartnerProps> = ({ on
                 boxShadow: 4,
               }
             }}
+            data-testid="add-partner-button"
           >
             Add Partner
           </Button>
@@ -472,6 +473,7 @@ export const AccountabilityPartner: React.FC<AccountabilityPartnerProps> = ({ on
                               bgcolor: 'success.main',
                               '&:hover': { bgcolor: 'success.dark' }
                             }}
+                            data-testid="accept-request-button"
                           >
                             Accept
                           </Button>
@@ -512,6 +514,7 @@ export const AccountabilityPartner: React.FC<AccountabilityPartnerProps> = ({ on
                   color="primary"
                   onClick={() => handleAcceptRequest(request)}
                   sx={{ mr: 1 }}
+                  data-testid="accept-request-button"
                 >
                   <CheckIcon />
                 </IconButton>
@@ -544,11 +547,12 @@ export const AccountabilityPartner: React.FC<AccountabilityPartnerProps> = ({ on
             fullWidth
             value={partnerEmail}
             onChange={(e) => setPartnerEmail(e.target.value)}
+            data-testid="partner-email-input"
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button onClick={handleAddPartner} variant="contained">
+          <Button onClick={handleAddPartner} variant="contained" data-testid="send-request-button">
             Send Request
           </Button>
         </DialogActions>

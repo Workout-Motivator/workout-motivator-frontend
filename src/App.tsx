@@ -3,7 +3,7 @@ import { BrowserRouter as Router, useLocation, useNavigate, Routes, Route, Navig
 import { ThemeProvider, createTheme, Theme, ThemeOptions } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box, AppBar, Toolbar, Typography, Button, Container, CircularProgress, Tabs, Tab, IconButton } from '@mui/material';
-import { auth, db } from './firebase';
+import { auth, db } from './firebaseConfig';
 import { useAuth } from './auth/AuthContext';
 import Login from './components/Login';
 import WorkoutBrowser from './components/WorkoutBrowser';
