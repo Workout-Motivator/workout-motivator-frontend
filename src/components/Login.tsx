@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Button, Typography, Container, TextField, Divider, Alert } from '@mui/material';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth } from '../firebaseConfig';
 import { useAuth } from '../auth/AuthContext';
 import GoogleIcon from '@mui/icons-material/Google';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';

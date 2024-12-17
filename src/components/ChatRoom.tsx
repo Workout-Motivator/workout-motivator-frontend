@@ -10,7 +10,7 @@ import {
   Badge,
   Divider,
 } from '@mui/material';
-import { auth, db } from '../firebase';
+import { auth, db } from '../firebaseConfig';
 import {
   collection,
   query,
