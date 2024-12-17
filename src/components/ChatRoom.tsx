@@ -35,7 +35,7 @@ const ChatRoom: React.FC = () => {
   });
   const [unreadMessages, setUnreadMessages] = useState<{[key: string]: number}>({});
   const [messages, setMessages] = useState<{[key: string]: ChatMessage[]}>({});
-  const unreadMessageListeners = useRef<{[key: string]: () => void}>({});
+  const unreadMessageListeners = useRef<{[key: string]: () => void}>( {});
 
   const selectedPartner = useMemo(() => 
     partners.find(p => p.id === selectedPartnerId) || null
@@ -140,9 +140,11 @@ const ChatRoom: React.FC = () => {
         }
         msgs.push({ id: doc.id, ...data } as ChatMessage);
       });
+      // Reverse the messages to show newest at the bottom
+      const sortedMsgs = [...msgs].reverse();
       setMessages(prev => ({
         ...prev,
-        [selectedPartnerId]: msgs.reverse()
+        [selectedPartnerId]: sortedMsgs
       }));
     });
 
@@ -202,85 +204,98 @@ const ChatRoom: React.FC = () => {
   };
 
   return (
-    <Box data-testid="chat-room"
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: '300px 1fr',
-        gap: 2,
-        height: 'calc(100vh - 200px)',
-        minHeight: '600px',
-        bgcolor: 'background.paper',
-        border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
-        borderRadius: '4px',
+    <Box sx={{ 
+      display: 'grid',
+      gridTemplateColumns: '280px 1fr',
+      gap: 0,
+      height: 'calc(100vh - 200px)',
+      minHeight: '600px',
+      bgcolor: '#1E1E1E',
+      color: 'white',
+      overflow: 'hidden',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      borderRadius: '4px',
+    }}>
+      <Box sx={{ 
+        borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+        bgcolor: '#1E1E1E',
         overflow: 'hidden',
-      }}
-    >
-      <Box
-        sx={{
-          borderRight: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
-          overflowY: 'auto',
-          height: '100%',
-        }}
-      >
-        <Typography variant="h6" sx={{ p: 2, borderBottom: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}` }}>
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <Typography variant="h6" sx={{ p: 2, color: 'white', flexShrink: 0 }}>
           Chat Partners
         </Typography>
-        <List data-testid="chat-partner-list" sx={{ p: 0 }}>
+        <List sx={{ 
+          flex: 1,
+          overflow: 'auto',
+          '& .MuiListItem-root': {
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          },
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#1E1E1E',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#2A2A2A',
+            borderRadius: '4px',
+            '&:hover': {
+              background: '#363636',
+            },
+          },
+        }}>
           {partners.map((partner) => (
             <ListItem
               key={partner.id}
               button
-              onClick={() => handlePartnerSelect(partner)}
-              data-testid="chat-partner-item"
+              selected={selectedPartnerId === partner.id}
+              onClick={() => setSelectedPartnerId(partner.id)}
               sx={{
-                cursor: 'pointer',
-                bgcolor: selectedPartnerId === partner.id 
-                  ? (theme) => theme.palette.mode === 'dark' 
-                    ? 'rgba(255, 255, 255, 0.08)' 
-                    : 'rgba(0, 0, 0, 0.04)'
-                  : 'transparent',
-                '&:hover': {
-                  bgcolor: (theme) => theme.palette.mode === 'dark' 
-                    ? 'rgba(255, 255, 255, 0.08)' 
-                    : 'rgba(0, 0, 0, 0.04)',
+                '&.Mui-selected': {
+                  bgcolor: '#2A2A2A',
+                  '&:hover': {
+                    bgcolor: '#2A2A2A',
+                  },
                 },
-                borderBottom: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
+                '&:hover': {
+                  bgcolor: 'rgba(255, 255, 255, 0.1)',
+                },
               }}
             >
               <ListItemAvatar>
-                <Avatar
-                  sx={{
-                    bgcolor: 'primary.main',
-                    width: 40,
-                    height: 40,
-                    borderRadius: '4px',
-                  }}
-                >
-                  {partner.username.charAt(0).toUpperCase()}
+                <Avatar sx={{ 
+                  bgcolor: '#00FF7F',
+                  color: 'black',
+                }}>
+                  {partner.username[0].toUpperCase()}
                 </Avatar>
               </ListItemAvatar>
-              <ListItemText
+              <ListItemText 
                 primary={partner.username}
                 sx={{
                   '& .MuiListItemText-primary': {
-                    color: 'text.primary',
-                    fontWeight: 500,
+                    color: 'white',
                   },
                 }}
               />
               {unreadMessages[partner.id] > 0 && (
                 <Badge
                   badgeContent={unreadMessages[partner.id]}
-                  color="primary"
-                  data-testid="unread-badge"
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      bgcolor: '#00FF7F',
+                      color: 'black',
+                    },
+                  }}
                 />
               )}
             </ListItem>
           ))}
         </List>
       </Box>
-
-      <Box sx={{ flexGrow: 1 }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
         {selectedPartner ? (
           <Chat
             partnerId={selectedPartner.id}
@@ -289,20 +304,14 @@ const ChatRoom: React.FC = () => {
             onSendMessage={handleSendMessage}
           />
         ) : (
-          <Box
-            sx={{
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
-              borderRadius: '4px',
-              bgcolor: 'background.paper',
-            }}
-          >
-            <Typography variant="body1" color="text.secondary">
-              Select a partner to start chatting
-            </Typography>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            height: '100%',
+            color: 'rgba(255, 255, 255, 0.5)',
+          }}>
+            <Typography variant="h6">Select a chat partner to start messaging</Typography>
           </Box>
         )}
       </Box>

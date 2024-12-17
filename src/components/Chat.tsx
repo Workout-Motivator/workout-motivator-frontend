@@ -25,17 +25,18 @@ const Chat: React.FC<ChatProps> = ({ partnerId, partnerName, messages, onSendMes
   const theme = useTheme();
 
   useEffect(() => {
+    // Scroll to bottom when new messages arrive
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]); // Scroll when messages change
 
   useEffect(() => {
-    // Initial scroll to bottom when component mounts
+    // Initial scroll to bottom when component mounts or partner changes
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, []); // Empty dependency array for mount only
+  }, [partnerId]); // Scroll when partner changes
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -50,17 +51,17 @@ const Chat: React.FC<ChatProps> = ({ partnerId, partnerName, messages, onSendMes
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
+      bgcolor: '#1E1E1E',
+      color: 'white',
       overflow: 'hidden',
-      bgcolor: 'background.default',
-      borderRadius: '4px',
-      border: '1px solid rgba(0, 0, 0, 0.12)'
     }}>
       <Box sx={{ 
         p: 2, 
-        borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
-        bgcolor: 'background.paper'
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        bgcolor: '#1E1E1E',
+        flexShrink: 0,
       }}>
-        <Typography variant="h6">{partnerName}</Typography>
+        <Typography variant="h6" sx={{ color: 'white' }}>{partnerName}</Typography>
       </Box>
 
       <Box
@@ -72,6 +73,21 @@ const Chat: React.FC<ChatProps> = ({ partnerId, partnerName, messages, onSendMes
           display: 'flex',
           flexDirection: 'column',
           gap: 1,
+          bgcolor: '#1E1E1E',
+          minHeight: 0,
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#1E1E1E',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#2A2A2A',
+            borderRadius: '4px',
+            '&:hover': {
+              background: '#363636',
+            },
+          },
         }}
       >
         {messages.map((message) => (
@@ -81,21 +97,18 @@ const Chat: React.FC<ChatProps> = ({ partnerId, partnerName, messages, onSendMes
               alignSelf: message.uid === auth.currentUser?.uid ? 'flex-end' : 'flex-start',
               maxWidth: '70%',
               mb: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: message.uid === auth.currentUser?.uid ? 'flex-end' : 'flex-start',
             }}
           >
             <Box
               sx={{
                 p: 1.5,
-                borderRadius: '4px',
-                bgcolor: message.uid === auth.currentUser?.uid 
-                  ? 'primary.main' 
-                  : (theme: Theme) => theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100',
-                color: message.uid === auth.currentUser?.uid 
-                  ? 'primary.contrastText' 
-                  : 'text.primary',
-                border: message.uid === auth.currentUser?.uid 
-                  ? 'none' 
-                  : (theme: Theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
+                borderRadius: '12px',
+                bgcolor: message.uid === auth.currentUser?.uid ? '#00FF7F' : '#2A2A2A',
+                color: message.uid === auth.currentUser?.uid ? 'black' : 'white',
+                mb: 0.5,
               }}
             >
               <Typography 
@@ -109,19 +122,17 @@ const Chat: React.FC<ChatProps> = ({ partnerId, partnerName, messages, onSendMes
               >
                 {message.text}
               </Typography>
-              <Typography 
-                variant="caption" 
-                sx={{ 
-                  display: 'block',
-                  mt: 0.5,
-                  opacity: 0.7,
-                  fontSize: '0.75rem',
-                  textAlign: message.uid === auth.currentUser?.uid ? 'right' : 'left',
-                }}
-              >
-                {message.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Typography>
             </Box>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: 'rgba(255, 255, 255, 0.5)',
+                fontSize: '0.75rem',
+                px: 1,
+              }}
+            >
+              {new Date(message.createdAt?.toDate() || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Typography>
           </Box>
         ))}
         <div ref={messagesEndRef} />
@@ -131,10 +142,12 @@ const Chat: React.FC<ChatProps> = ({ partnerId, partnerName, messages, onSendMes
         component="form"
         onSubmit={handleSubmit}
         sx={{
+          p: 2,
+          bgcolor: '#1E1E1E',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
           display: 'flex',
           gap: 1,
-          p: 2,
-          borderTop: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`,
+          flexShrink: 0,
         }}
       >
         <TextField
@@ -142,22 +155,33 @@ const Chat: React.FC<ChatProps> = ({ partnerId, partnerName, messages, onSendMes
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."
+          variant="outlined"
           size="small"
           sx={{
             '& .MuiOutlinedInput-root': {
-              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-            }
+              color: 'white',
+              bgcolor: '#2A2A2A',
+              '& fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+              },
+              '&:hover fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#00FF7F',
+              },
+            },
+            '& .MuiInputBase-input::placeholder': {
+              color: 'rgba(255, 255, 255, 0.5)',
+            },
           }}
         />
         <IconButton 
-          type="submit"
-          color="primary"
-          sx={{
-            borderRadius: '4px',
-            backgroundColor: 'primary.main',
-            color: 'primary.contrastText',
+          type="submit" 
+          sx={{ 
+            color: '#00FF7F',
             '&:hover': {
-              backgroundColor: 'primary.dark',
+              bgcolor: 'rgba(0, 255, 127, 0.1)',
             },
           }}
         >
