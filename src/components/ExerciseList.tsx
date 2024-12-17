@@ -53,12 +53,13 @@ const ExerciseList: React.FC = () => {
         throw new Error(`Failed to fetch categories: ${response.status}`);
       }
       
-      const data: string[] = await response.json();
+      const data: CategoryCount[] = await response.json();
       if (!Array.isArray(data)) {
         throw new Error('Invalid response format: expected an array');
       }
 
-      setCategories(data);
+      const categoryNames = data.map(item => item.category);
+      setCategories(categoryNames);
       setError(null);
     } catch (error) {
       console.error('Error fetching categories:', error);
