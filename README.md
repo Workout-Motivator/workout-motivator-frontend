@@ -22,6 +22,10 @@ A React TypeScript application for fitness tracking and partner accountability. 
   - Mobile-first approach
   - Dark theme support
   - Modern UI components
+- End-to-End Testing
+  - Automated UI tests with Playwright
+  - CI/CD integration
+  - Firebase Emulator support
 
 ## Prerequisites
 
@@ -69,6 +73,44 @@ npm start
 
 The application will be available at `http://localhost:3000`
 
+## Testing
+
+### End-to-End Tests
+
+The project uses Playwright for end-to-end testing. Tests are automatically run in CI/CD, but you can also run them locally:
+
+1. Install Playwright browsers:
+```bash
+npx playwright install
+```
+
+2. Run tests:
+```bash
+# Run all tests
+npm run test:e2e
+
+# Run specific test file
+npx playwright test tests/authCreateAccount.spec.ts
+```
+
+3. View test reports:
+```bash
+npx playwright show-report
+```
+
+### Test Environment
+
+- Tests use Firebase Emulator for authentication
+- The test environment is configured to run in isolation
+- CI/CD automatically sets up the test environment
+
+### Writing Tests
+
+Tests are located in the `tests` directory. Follow these guidelines:
+- Use data-testid attributes for reliable element selection
+- Handle asynchronous operations properly
+- Write tests that are independent and idempotent
+
 ## Production Deployment
 
 The application is deployed to Azure Kubernetes Service (AKS) using GitHub Actions for CI/CD.
@@ -99,28 +141,32 @@ The application is deployed to Azure Kubernetes Service (AKS) using GitHub Actio
 
 1. Push to main branch triggers automatic deployment
 2. GitHub Actions workflow:
-   - Builds Docker image
-   - Pushes to Azure Container Registry
+   - Builds the application
+   - Runs tests (including E2E tests)
+   - Creates Docker container
+   - Pushes to ACR
    - Deploys to AKS
-   - Creates necessary Kubernetes secrets
 
-### Manual Deployment
+### Monitoring Deployments
 
-1. Build Docker image:
-```bash
-docker build -t your-acr.azurecr.io/workout-motivator-frontend:latest .
-```
+1. GitHub Actions:
+   - Check workflow status in Actions tab
+   - View test reports in artifacts
+   - Monitor deployment steps
 
-2. Push to ACR:
-```bash
-docker push your-acr.azurecr.io/workout-motivator-frontend:latest
-```
+2. Deployment Issues:
+   - Verify GitHub secrets are correctly set
+   - Check pod logs: `kubectl logs -n workout-motivator <pod-name>`
+   - Verify ACR credentials: `kubectl get secret acr-secret -n workout-motivator`
 
-3. Apply Kubernetes configurations:
-```bash
-kubectl apply -f kubernetes/deployment.yml
-kubectl apply -f kubernetes/service.yml
-```
+## Available Scripts
+
+- `npm start` - Start development server
+- `npm run start:testenv` - Start with Firebase Emulator support
+- `npm test` - Run unit tests
+- `npm run test:e2e` - Run end-to-end tests
+- `npm run build` - Build for production
+- `npm run eject` - Eject from Create React App
 
 ## Project Structure
 
@@ -135,15 +181,6 @@ kubectl apply -f kubernetes/service.yml
 ├── kubernetes/        # Kubernetes configuration files
 ├── .github/          # GitHub Actions workflows
 └── Dockerfile        # Multi-stage Docker build
-```
-
-## Available Scripts
-
-- `npm start`: Run the development server
-- `npm build`: Build the production application
-- `npm test`: Run tests
-- `npm run lint`: Run ESLint
-- `npm run format`: Format code with Prettier
 
 ## Technologies
 
