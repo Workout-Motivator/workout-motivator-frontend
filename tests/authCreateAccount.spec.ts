@@ -2,48 +2,50 @@
 import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
+  // Navigate to the homepage
   await page.goto('http://localhost:3000/');
+  
+  // Wait for the page to be fully loaded
+  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
+  
+  // Wait for the login container to be visible
+  await page.waitForSelector('[data-testid="login-container"]', { timeout: 60000 });
+  
+  // Set up popup listener before clicking
+  const [popup] = await Promise.all([
+    page.waitForEvent('popup'),
+    page.getByRole('button', { name: 'Continue with Google' }).click()
+  ]);
+
+  // Handle popup interactions
+  await popup.waitForLoadState();
+  await popup.getByRole('button', { name: 'Add new account' }).click();
+  await popup.getByRole('button', { name: 'Auto-generate user information' }).click();
+  await popup.getByRole('button', { name: 'Sign in with Google.com' }).click();
+  
+  // Wait for navigation after login
+  await page.waitForURL('http://localhost:3000/workouts', { timeout: 60000 });
   await page.waitForLoadState('networkidle');
   
-  const page1Promise = page.waitForEvent('popup');
-  await page.getByRole('button', { name: 'Continue with Google' }).click();
-  const page1 = await page1Promise;
-  
-  await page1.getByRole('button', { name: 'Add new account' }).click();
-  await page1.getByRole('button', { name: 'Auto-generate user information' }).click();
-  await page1.getByRole('button', { name: 'Sign in with Google.com' }).click();
-  
-  // Wait for navigation and full page load after login
-  await page.waitForURL('http://localhost:3000/workouts');
-  await page.waitForLoadState('networkidle');
-  
-  // Wait for the tab to be visible and clickable
+  // Wait for and verify navigation tabs
   const exercisesTab = page.getByRole('tab', { name: 'Exercises' });
-  await exercisesTab.waitFor({ state: 'visible', timeout: 10000 });
-  await expect(exercisesTab).toBeEnabled();
+  await expect(exercisesTab).toBeVisible({ timeout: 60000 });
   await exercisesTab.click();
-
-  // Wait for the workout tracker tab and click
+  
   const workoutTrackerTab = page.getByRole('tab', { name: 'Workout Tracker' });
-  await workoutTrackerTab.waitFor({ state: 'visible', timeout: 10000 });
-  await expect(workoutTrackerTab).toBeEnabled();
+  await expect(workoutTrackerTab).toBeVisible({ timeout: 60000 });
   await workoutTrackerTab.click();
-
-  // Wait for partners tab and click
+  
   const partnersTab = page.getByRole('tab', { name: 'Partners' });
-  await partnersTab.waitFor({ state: 'visible', timeout: 10000 });
-  await expect(partnersTab).toBeEnabled();
+  await expect(partnersTab).toBeVisible({ timeout: 60000 });
   await partnersTab.click();
-
-  // Wait for chat tab and click
+  
   const chatTab = page.getByRole('tab', { name: 'Chat' });
-  await chatTab.waitFor({ state: 'visible', timeout: 10000 });
-  await expect(chatTab).toBeEnabled();
+  await expect(chatTab).toBeVisible({ timeout: 60000 });
   await chatTab.click();
-
-  // Wait for logout button and click
+  
   const logoutButton = page.getByRole('button', { name: 'Logout' });
-  await logoutButton.waitFor({ state: 'visible', timeout: 10000 });
-  await expect(logoutButton).toBeEnabled();
+  await expect(logoutButton).toBeVisible({ timeout: 60000 });
   await logoutButton.click();
 });

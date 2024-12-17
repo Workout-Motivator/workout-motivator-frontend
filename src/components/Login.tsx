@@ -37,6 +37,7 @@ const Login = () => {
 
   return (
     <Box
+      data-testid="login-container"
       sx={{
         minHeight: '100vh',
         display: 'flex',
