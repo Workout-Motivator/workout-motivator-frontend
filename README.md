@@ -141,10 +141,11 @@ The application is deployed to Azure Kubernetes Service (AKS) using GitHub Actio
 
 1. Push to main branch triggers automatic deployment
 2. GitHub Actions workflow:
+   - Builds Docker image
+   - Pushes to Azure Container Registry
    - Builds the application
    - Runs tests (including E2E tests)
    - Creates Docker container
-   - Pushes to ACR
    - Deploys to AKS
 
 ### Monitoring Deployments
