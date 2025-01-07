@@ -43,7 +43,7 @@ const ExerciseList: React.FC = () => {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/exercises/categories`, {
+      const response = await fetch(`${API_BASE_URL}/exercises/categories/`, {
         headers: {
           'Accept': 'application/json'
         }
@@ -72,7 +72,7 @@ const ExerciseList: React.FC = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `${API_BASE_URL}/exercises?skip=${(page - 1) * 24}&limit=24${
+        `${API_BASE_URL}/exercises/?skip=${(page - 1) * 24}&limit=24${
           category ? `&category=${encodeURIComponent(category)}` : ''
         }${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`,
         {
