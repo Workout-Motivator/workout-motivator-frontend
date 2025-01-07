@@ -17,7 +17,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = 'http://108.141.13.160/api';
+const API_BASE_URL = '/api';
 
 interface Exercise {
   id: number;
