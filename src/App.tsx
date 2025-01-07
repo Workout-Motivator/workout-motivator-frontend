@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, useLocation, useNavigate, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme, Theme, ThemeOptions } from '@mui/material/styles';
+import { ThemeProvider, createTheme, Theme, ThemeOptions, useTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box, AppBar, Toolbar, Typography, Button, Container, CircularProgress, Tabs, Tab, IconButton } from '@mui/material';
 import { auth, db } from './firebaseConfig';
 import { useAuth } from './auth/AuthContext';
 import Login from './components/Login';
 import WorkoutBrowser from './components/WorkoutBrowser';
+import WorkoutTemplates from './components/WorkoutTemplates';
 import { AccountabilityPartner } from './components/AccountabilityPartner';
 import ChatRoom from './components/ChatRoom';
 import ExerciseList from './components/ExerciseList';
@@ -228,8 +229,9 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const AppContent: React.FC<AppContentProps> = ({ mode, toggleColorMode, value, setValue, unreadCount, user }) => {
-  const location = useLocation();
+  const theme = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -238,15 +240,18 @@ const AppContent: React.FC<AppContentProps> = ({ mode, toggleColorMode, value, s
         navigate('/workouts');
         break;
       case 1:
-        navigate('/exercises');
+        navigate('/templates');
         break;
       case 2:
-        navigate('/workout-tracker');
+        navigate('/exercises');
         break;
       case 3:
-        navigate('/partners');
+        navigate('/workout-tracker');
         break;
       case 4:
+        navigate('/partners');
+        break;
+      case 5:
         navigate('/chat');
         break;
     }
@@ -255,10 +260,11 @@ const AppContent: React.FC<AppContentProps> = ({ mode, toggleColorMode, value, s
   useEffect(() => {
     const path = location.pathname;
     if (path.includes('/workouts')) setValue(0);
-    else if (path.includes('/exercises')) setValue(1);
-    else if (path.includes('/workout-tracker')) setValue(2);
-    else if (path.includes('/partners')) setValue(3);
-    else if (path.includes('/chat')) setValue(4);
+    else if (path.includes('/templates')) setValue(1);
+    else if (path.includes('/exercises')) setValue(2);
+    else if (path.includes('/workout-tracker')) setValue(3);
+    else if (path.includes('/partners')) setValue(4);
+    else if (path.includes('/chat')) setValue(5);
   }, [location.pathname]);
 
   return (
@@ -325,47 +331,33 @@ const AppContent: React.FC<AppContentProps> = ({ mode, toggleColorMode, value, s
         <Tabs 
           value={value} 
           onChange={handleTabChange}
-          aria-label="nav tabs"
-          variant="fullWidth"
+          variant="scrollable"
+          scrollButtons="auto"
           sx={{
-            '& .MuiTab-root': {
-              color: '#fff',
-              '&.Mui-selected': {
-                color: '#00c853',
-              },
-            },
             borderBottom: 1,
             borderColor: 'divider',
-            width: '100%'
+            backgroundColor: theme.palette.background.paper,
           }}
         >
           <Tab 
             icon={<FitnessCenterIcon />} 
-            iconPosition="start" 
             label="Workouts" 
-            id="nav-tab-0" 
-            aria-controls="nav-tabpanel-0" 
           />
           <Tab 
             icon={<ListAltIcon />} 
-            iconPosition="start" 
-            label="Exercises" 
-            id="nav-tab-1" 
-            aria-controls="nav-tabpanel-1" 
+            label="Templates" 
           />
           <Tab 
-            icon={<TimerIcon sx={{ color: '#00c853' }} />} 
-            iconPosition="start" 
-            label="Workout Tracker" 
-            id="nav-tab-2" 
-            aria-controls="nav-tabpanel-2" 
+            icon={<ListAltIcon />} 
+            label="Exercises" 
+          />
+          <Tab 
+            icon={<TimerIcon />} 
+            label="Tracker" 
           />
           <Tab 
             icon={<PeopleIcon />} 
-            iconPosition="start" 
             label="Partners" 
-            id="nav-tab-3" 
-            aria-controls="nav-tabpanel-3" 
           />
           <Tab 
             icon={/* eslint-disable-next-line react/jsx-wrap-multilines */
@@ -393,10 +385,7 @@ const AppContent: React.FC<AppContentProps> = ({ mode, toggleColorMode, value, s
                 )}
               </Box>
             }
-            iconPosition="start"
             label="Chat"
-            id="nav-tab-4"
-            aria-controls="nav-tabpanel-4"
           />
         </Tabs>
       </AppBar>
@@ -413,6 +402,7 @@ const AppContent: React.FC<AppContentProps> = ({ mode, toggleColorMode, value, s
         <Routes>
           <Route path="/" element={<Navigate to="/workouts" />} />
           <Route path="/workouts" element={<WorkoutBrowser />} />
+          <Route path="/templates" element={<WorkoutTemplates />} />
           <Route path="/exercises" element={<ExerciseList />} />
           <Route path="/exercise/:title" element={<ExerciseDetail />} />
           <Route path="/workout-tracker" element={<WorkoutTracker />} />
