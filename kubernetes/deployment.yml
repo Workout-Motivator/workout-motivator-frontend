@@ -4,7 +4,7 @@ metadata:
   name: workout-motivator-frontend
   namespace: workout-motivator
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: workout-motivator-frontend
@@ -27,11 +27,11 @@ spec:
         - containerPort: 80
         resources:
           requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
             cpu: "100m"
             memory: "128Mi"
-          limits:
-            cpu: "250m"
-            memory: "256Mi"
         command: ["nginx", "-g", "daemon off;"]
         readinessProbe:
           httpGet:
