@@ -16,11 +16,11 @@ export const options = {
     http_req_duration: ['p(95)<2000'], // 95% of requests should complete within 2s
     http_req_failed: ['rate<0.01'],    // Less than 1% of requests should fail
     errors: ['rate<0.1'],              // Less than 10% error rate
-    successful_requests: ['count>50'],  // At least 50 successful requests
+    successful_requests: ['count>100'],  // At least 100 successful requests
   },
 };
 
-const BASE_URL = 'http://108.141.13.160.nip.io';
+const BASE_URL = 'http://20.31.46.9';
 
 export default function () {
   const responses = http.batch([
