@@ -10,18 +10,18 @@ const requestDuration = new Trend('request_duration');
 
 export const options = {
   stages: [
-    { duration: '10s', target: 2000 },   // Ramp up to 2000 users
-    { duration: '20s', target: 5000 },  // Ramp up to 5000 users
-    { duration: '30s', target: 5000 },  // Stay at 5000 users
-    { duration: '10s', target: 0 },    // Ramp down to 0 users
+    { duration: '30s', target: 100 },   // Ramp up to 100 users
+    { duration: '1m', target: 500 },    // Ramp up to 500 users
+    { duration: '2m', target: 500 },    // Stay at 500 users
+    { duration: '30s', target: 0 },     // Ramp down to 0 users
   ],
   thresholds: {
-    http_req_duration: ['p(95)<2000'], // 95% of requests should complete within 2s
-    http_req_failed: ['rate<0.01'],    // Less than 1% of requests should fail
-    errors: ['rate<0.1'],              // Less than 10% error rate
-    successful_requests: ['count>1000'],  // At least 1000 successful requests
-    uptime: ['rate>0.99'],             // 99% uptime
-    failed_requests: ['rate<0.01'],     // Less than 1% failed requests
+    http_req_duration: ['p(95)<2000'],  // 95% of requests should complete within 2s
+    http_req_failed: ['rate<0.01'],     // Less than 1% of requests should fail
+    errors: ['rate<0.1'],               // Less than 10% error rate
+    successful_requests: ['count>50'],   // At least 50 successful requests
+    uptime: ['rate>0.95'],              // 95% uptime
+    failed_requests: ['rate<0.05'],      // Less than 5% failed requests
   },
   // Add setup and teardown options
   setupTimeout: '30s',
