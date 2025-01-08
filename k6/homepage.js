@@ -1,8 +1,9 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { Rate } from 'k6/metrics';
+import { Rate, Counter } from 'k6/metrics';
 
 const errorRate = new Rate('errors');
+const successfulRequests = new Counter('successful_requests');
 
 export const options = {
   stages: [
@@ -14,6 +15,7 @@ export const options = {
     http_req_duration: ['p(95)<2000'],
     http_req_failed: ['rate<0.01'],
     errors: ['rate<0.1'],
+    successful_requests: ['count>100'],
   },
 };
 
@@ -27,10 +29,16 @@ export default function () {
   ]);
 
   // Check homepage load
-  check(responses[0], {
+  const homeSuccess = check(responses[0], {
     'homepage status is 200': (r) => r.status === 200,
     'homepage has correct content': (r) => r.body.includes('workout'),
-  }) || errorRate.add(1);
+  });
+
+  if (homeSuccess) {
+    successfulRequests.add(1);
+  } else {
+    errorRate.add(1);
+  }
 
   // Check static assets
   check(responses[1], {
