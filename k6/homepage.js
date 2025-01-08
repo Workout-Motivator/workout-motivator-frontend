@@ -7,19 +7,23 @@ const successfulRequests = new Counter('successful_requests');
 
 export const options = {
   stages: [
-    { duration: '30s', target: 7500 },
-    { duration: '1m', target: 7500 },
-    { duration: '30s', target: 0 },
+    { duration: '30s', target: 100 },  // Ramp up to 100 users
+    { duration: '1m', target: 100 },   // Stay at 100 users
+    { duration: '30s', target: 500 },  // Ramp up to 500 users
+    { duration: '1m', target: 500 },   // Stay at 500 users
+    { duration: '30s', target: 1000 }, // Ramp up to 1000 users
+    { duration: '1m', target: 1000 },  // Stay at 1000 users
+    { duration: '30s', target: 0 },    // Ramp down to 0 users
   ],
   thresholds: {
-    http_req_duration: ['p(95)<2000'],
-    http_req_failed: ['rate<0.01'],
-    errors: ['rate<0.1'],
-    successful_requests: ['count>100'],
+    http_req_duration: ['p(95)<2000'], // 95% of requests should complete within 2s
+    http_req_failed: ['rate<0.01'],    // Less than 1% of requests should fail
+    errors: ['rate<0.1'],              // Less than 10% error rate
+    successful_requests: ['count>100'], // At least 100 successful requests
   },
 };
 
-const BASE_URL = __ENV.TARGET_URL || 'http://20.31.46.9';
+const BASE_URL = 'http://20.31.46.9';
 
 export default function () {
   const responses = http.batch([

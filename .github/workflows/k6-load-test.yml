@@ -12,13 +12,6 @@ jobs:
   k6_load_test:
     name: k6 Load Test
     runs-on: ubuntu-latest
-    env:
-      REACT_APP_FIREBASE_API_KEY: ${{ secrets.REACT_APP_FIREBASE_API_KEY }}
-      REACT_APP_FIREBASE_AUTH_DOMAIN: ${{ secrets.REACT_APP_FIREBASE_AUTH_DOMAIN }}
-      REACT_APP_FIREBASE_PROJECT_ID: ${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }}
-      REACT_APP_FIREBASE_STORAGE_BUCKET: ${{ secrets.REACT_APP_FIREBASE_STORAGE_BUCKET }}
-      REACT_APP_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }}
-      REACT_APP_FIREBASE_APP_ID: ${{ secrets.REACT_APP_FIREBASE_APP_ID }}
 
     steps:
       - name: Checkout
@@ -32,44 +25,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install k6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Create env file
-        run: |
-          echo "REACT_APP_FIREBASE_API_KEY=${{ secrets.REACT_APP_FIREBASE_API_KEY }}" >> .env
-          echo "REACT_APP_FIREBASE_AUTH_DOMAIN=${{ secrets.REACT_APP_FIREBASE_AUTH_DOMAIN }}" >> .env
-          echo "REACT_APP_FIREBASE_PROJECT_ID=${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }}" >> .env
-          echo "REACT_APP_FIREBASE_STORAGE_BUCKET=${{ secrets.REACT_APP_FIREBASE_STORAGE_BUCKET }}" >> .env
-          echo "REACT_APP_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }}" >> .env
-          echo "REACT_APP_FIREBASE_APP_ID=${{ secrets.REACT_APP_FIREBASE_APP_ID }}" >> .env
-        working-directory: .
-
-      - name: Install dependencies
-        run: |
-          npm install
-          npm install firebase @firebase/app @firebase/auth
-        working-directory: .
-
-      - name: Build frontend
-        run: CI=false npm run build
-        working-directory: .
-
-      - name: Start frontend service
-        run: |
-          npm install -g serve
-          serve -s build -l 3000 &
-          sleep 10  # Wait for the server to start
-        working-directory: .
-
       - name: Run k6 Load Test
         run: |
           k6 run --out json=results.json k6/homepage.js
           cat results.json > k6-summary.json
-        working-directory: .
 
       - name: Upload test results
         if: always()
