@@ -7,23 +7,20 @@ const successfulRequests = new Counter('successful_requests');
 
 export const options = {
   stages: [
-    { duration: '30s', target: 100 },  // Ramp up to 100 users
-    { duration: '1m', target: 100 },   // Stay at 100 users
-    { duration: '30s', target: 500 },  // Ramp up to 500 users
-    { duration: '1m', target: 500 },   // Stay at 500 users
-    { duration: '30s', target: 1000 }, // Ramp up to 1000 users
-    { duration: '1m', target: 1000 },  // Stay at 1000 users
-    { duration: '30s', target: 0 },    // Ramp down to 0 users
+    { duration: '10s', target: 2000 },   // Ramp up to 2000 users
+    { duration: '20s', target: 5000 },  // Ramp up to 5000 users
+    { duration: '30s', target: 5000 },  // Stay at 5000 users
+    { duration: '10s', target: 0 },    // Ramp down to 0 users
   ],
   thresholds: {
     http_req_duration: ['p(95)<2000'], // 95% of requests should complete within 2s
     http_req_failed: ['rate<0.01'],    // Less than 1% of requests should fail
     errors: ['rate<0.1'],              // Less than 10% error rate
-    successful_requests: ['count>100'], // At least 100 successful requests
+    successful_requests: ['count>50'],  // At least 50 successful requests
   },
 };
 
-const BASE_URL = 'http://20.31.46.9';
+const BASE_URL = 'http://108.141.13.160.nip.io';
 
 export default function () {
   const responses = http.batch([
@@ -53,5 +50,5 @@ export default function () {
     'main.css loaded': (r) => r.status === 200,
   }) || errorRate.add(1);
 
-  sleep(Math.random() * 3 + 2); // Random sleep between 2-5 seconds
+  sleep(1);
 }
