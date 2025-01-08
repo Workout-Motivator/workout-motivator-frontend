@@ -17,6 +17,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -26,30 +34,23 @@ jobs:
         run: npm ci
         working-directory: ./workout-motivator-frontend
 
-      - name: Start Frontend Application
+      - name: Build frontend
+        run: npm run build
+        working-directory: ./workout-motivator-frontend
+
+      - name: Start frontend service
         run: |
-          npm run build
           npm install -g serve
           serve -s build -l 3000 &
           sleep 10  # Wait for the server to start
         working-directory: ./workout-motivator-frontend
 
       - name: Run k6 Load Test
-        uses: grafana/k6-action@v0.3.0
-        with:
-          filename: workout-motivator-frontend/k6/homepage.js
-          flags: --out json=results.json
+        run: k6 run workout-motivator-frontend/k6/homepage.js
 
-      - name: Store Load Test Results
+      - name: Upload test results
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: k6-results
-          path: results.json
-
-      # Optional: Add failure conditions based on test results
-      - name: Check Load Test Results
-        run: |
-          if [ $(jq '.metrics.http_req_failed.values.rate' results.json) -gt 0.01 ]; then
-            echo "Error rate exceeded threshold"
-            exit 1
-          fi
+          path: k6-summary.json
