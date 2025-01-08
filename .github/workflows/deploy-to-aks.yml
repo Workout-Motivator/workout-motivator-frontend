@@ -101,6 +101,24 @@ jobs:
           echo " Waiting for deployment to be fully rolled out..."
           kubectl rollout status deployment/${{ env.APP_NAME }} -n ${{ env.NAMESPACE }} --timeout=300s
 
+      - name: Wait for service to be ready
+        run: |
+          echo "Waiting for service to be ready..."
+          timeout=300
+          counter=0
+          until curl -s -f http://20.31.46.9 > /dev/null || [ $counter -eq $timeout ]
+          do
+            echo "Waiting for service to respond... ($(($timeout-$counter)) seconds left)"
+            sleep 1
+            counter=$((counter+1))
+          done
+          if [ $counter -eq $timeout ]; then
+            echo "Service did not become ready in time"
+            exit 1
+          fi
+          echo "Service is ready!"
+          sleep 10  # Give it a little more time to stabilize
+
       - name: Run k6 load test
         run: |
           echo "Running load test on new deployment..."
