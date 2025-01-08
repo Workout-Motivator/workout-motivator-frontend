@@ -33,9 +33,9 @@ test('test', async ({ page }) => {
   await expect(exercisesTab).toBeVisible({ timeout: 60000 });
   await exercisesTab.click();
   
-  const workoutTrackerTab = page.getByRole('tab', { name: 'Workout Tracker' });
-  await expect(workoutTrackerTab).toBeVisible({ timeout: 60000 });
-  await workoutTrackerTab.click();
+  const trackerTab = page.getByRole('tab', { name: 'Tracker' });
+  await expect(trackerTab).toBeVisible({ timeout: 60000 });
+  await trackerTab.click();
   
   const partnersTab = page.getByRole('tab', { name: 'Partners' });
   await expect(partnersTab).toBeVisible({ timeout: 60000 });
