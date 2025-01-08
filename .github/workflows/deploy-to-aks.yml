@@ -77,14 +77,23 @@ jobs:
             --from-literal=REACT_APP_FIREBASE_MEASUREMENT_ID=${{ secrets.REACT_APP_FIREBASE_MEASUREMENT_ID }} \
             --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Check current deployment version
+        run: |
+          echo "Current deployment version:"
+          kubectl get deployment ${{ env.APP_NAME }} -n ${{ env.NAMESPACE }} -o=jsonpath='{.spec.template.spec.containers[0].image}'
+          echo -e "\nDeploying new version: ${{ github.sha }}"
+
       - name: Deploy to AKS
         uses: azure/k8s-deploy@v1
         with:
           manifests: |
-            kubernetes/deployment.yml
-            kubernetes/service.yml
+            kubernetes/deployment.yaml
+            kubernetes/service.yaml
           images: |
             ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }}
           namespace: ${{ env.NAMESPACE }}
-          strategy: canary
-          percentage: 50
+
+      - name: Verify deployment
+        run: |
+          echo "Deployment complete. New version details:"
+          kubectl get deployment ${{ env.APP_NAME }} -n ${{ env.NAMESPACE }} -o=jsonpath='{.spec.template.spec.containers[0].image}'
