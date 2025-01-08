@@ -1,0 +1,55 @@
+name: K6 Load Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 1'  # Run weekly on Mondays at midnight
+
+jobs:
+  k6_load_test:
+    name: k6 Load Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./workout-motivator-frontend
+
+      - name: Start Frontend Application
+        run: |
+          npm run build
+          npm install -g serve
+          serve -s build -l 3000 &
+          sleep 10  # Wait for the server to start
+        working-directory: ./workout-motivator-frontend
+
+      - name: Run k6 Load Test
+        uses: grafana/k6-action@v0.3.0
+        with:
+          filename: workout-motivator-frontend/k6/homepage.js
+          flags: --out json=results.json
+
+      - name: Store Load Test Results
+        uses: actions/upload-artifact@v2
+        with:
+          name: k6-results
+          path: results.json
+
+      # Optional: Add failure conditions based on test results
+      - name: Check Load Test Results
+        run: |
+          if [ $(jq '.metrics.http_req_failed.values.rate' results.json) -gt 0.01 ]; then
+            echo "Error rate exceeded threshold"
+            exit 1
+          fi

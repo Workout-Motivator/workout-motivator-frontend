@@ -31,6 +31,7 @@
     "@playwright/test": "^1.49.1",
     "@types/node": "^22.10.1",
     "cross-env": "^7.0.3",
+    "k6": "^0.40.0",
     "wait-on": "^7.2.0"
   },
   "scripts": {
@@ -38,7 +39,9 @@
     "start:testenv": "cross-env REACT_APP_USE_EMULATORS=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "k6:homepage": "k6 run k6/homepage.js",
+    "k6:all": "k6 run k6/*.js"
   },
   "proxy": "http://localhost:8000",
   "eslintConfig": {

@@ -1,0 +1,71 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-load-test
+spec:
+  template:
+    spec:
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          args:
+            - run
+            - /scripts/homepage.js
+          env:
+            - name: TARGET_URL
+              value: "http://20.31.46.9"
+            - name: K6_OUT
+              value: "statsd"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: k6-scripts
+              mountPath: /scripts
+      volumes:
+        - name: k6-scripts
+          configMap:
+            name: k6-test-scripts
+      restartPolicy: Never
+  backoffLimit: 1
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: k6-load-test-schedule
+spec:
+  schedule: "0 0 * * 1"  # Every Monday at midnight
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: k6
+              image: grafana/k6:latest
+              args:
+                - run
+                - /scripts/homepage.js
+              env:
+                - name: TARGET_URL
+                  value: "http://20.31.46.9"
+                - name: K6_OUT
+                  value: "statsd"
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "200m"
+                limits:
+                  memory: "512Mi"
+                  cpu: "500m"
+              volumeMounts:
+                - name: k6-scripts
+                  mountPath: /scripts
+          volumes:
+            - name: k6-scripts
+              configMap:
+                name: k6-test-scripts
+          restartPolicy: Never
