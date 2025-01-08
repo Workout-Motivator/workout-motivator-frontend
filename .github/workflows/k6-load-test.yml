@@ -32,21 +32,22 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        working-directory: ./workout-motivator-frontend
+        working-directory: .
 
       - name: Build frontend
         run: npm run build
-        working-directory: ./workout-motivator-frontend
+        working-directory: .
 
       - name: Start frontend service
         run: |
           npm install -g serve
           serve -s build -l 3000 &
           sleep 10  # Wait for the server to start
-        working-directory: ./workout-motivator-frontend
+        working-directory: .
 
       - name: Run k6 Load Test
-        run: k6 run workout-motivator-frontend/k6/homepage.js
+        run: k6 run k6/homepage.js
+        working-directory: .
 
       - name: Upload test results
         if: always()
