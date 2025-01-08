@@ -87,8 +87,8 @@ jobs:
         uses: azure/k8s-deploy@v1
         with:
           manifests: |
-            kubernetes/deployment.yaml
-            kubernetes/service.yaml
+            kubernetes/deployment.yml
+            kubernetes/service.yml
           images: |
             ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }}
           namespace: ${{ env.NAMESPACE }}
