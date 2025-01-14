@@ -10,10 +10,12 @@ const requestDuration = new Trend('request_duration');
 
 export const options = {
   stages: [
-    { duration: '30s', target: 100 },   // Ramp up to 100 users
-    { duration: '1m', target: 500 },    // Ramp up to 500 users
-    { duration: '2m', target: 500 },    // Stay at 500 users
-    { duration: '30s', target: 0 },     // Ramp down to 0 users
+    { duration: '30s', target: 100 },    // Ramp up to 100 users
+    { duration: '30s', target: 500 },    // Ramp up to 500 users
+    { duration: '1m', target: 500 },     // Stay at 500 users
+    { duration: '30s', target: 1000 },   // Ramp up to 1000 users
+    { duration: '1m', target: 1000 },    // Stay at 1000 users
+    { duration: '30s', target: 0 },      // Ramp down to 0 users
   ],
   thresholds: {
     http_req_duration: ['p(95)<2000'],  // 95% of requests should complete within 2s
