@@ -89,6 +89,7 @@ jobs:
           manifests: |
             kubernetes/deployment.yml
             kubernetes/service.yml
+            kubernetes/hpa.yml
           images: |
             ${{ secrets.AZURE_CONTAINER_REGISTRY_SERVER }}/workout-motivator-frontend:${{ github.sha }}
           namespace: ${{ env.NAMESPACE }}
